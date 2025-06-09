@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Plus, FolderOpen, Users, FileText, BarChart3 } from "lucide-react";
+import { Plus, FolderOpen, FileText, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Project } from "@/entities";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,13 +27,18 @@ export default function Projects() {
 
   const queryClient = useQueryClient();
 
-  const { data: projects = [], isLoading } = useQuery({
+  const { data: projects = [], isLoading, refetch } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      console.log('Fetching projects...');
-      const result = await Project.list();
-      console.log('Projects fetched:', result);
-      return result;
+      try {
+        console.log('Fetching projects...');
+        const result = await Project.list();
+        console.log('Projects fetched successfully:', result);
+        return result || [];
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        return [];
+      }
     },
   });
 
@@ -47,12 +52,24 @@ export default function Projects() {
 
     setIsCreating(true);
     try {
-      console.log('Creating project:', newProject);
-      const createdProject = await Project.create(newProject);
-      console.log('Project created:', createdProject);
+      console.log('Creating project with data:', newProject);
+      
+      // Create the project
+      const createdProject = await Project.create({
+        project_name: newProject.project_name,
+        description: newProject.description,
+        principal_investigator: newProject.principal_investigator,
+        institution: newProject.institution,
+        irb_number: newProject.irb_number,
+        status: newProject.status,
+        settings: {}
+      });
+      
+      console.log('Project created successfully:', createdProject);
       
       toast.success("Project created successfully!");
-      setIsCreateDialogOpen(false);
+      
+      // Reset form
       setNewProject({
         project_name: "",
         description: "",
@@ -62,11 +79,15 @@ export default function Projects() {
         status: "development",
       });
       
-      // Invalidate and refetch projects
-      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      // Close dialog
+      setIsCreateDialogOpen(false);
+      
+      // Refetch projects
+      await refetch();
+      
     } catch (error) {
       console.error("Error creating project:", error);
-      toast.error("Failed to create project. Please try again.");
+      toast.error(`Failed to create project: ${error.message || 'Unknown error'}`);
     } finally {
       setIsCreating(false);
     }

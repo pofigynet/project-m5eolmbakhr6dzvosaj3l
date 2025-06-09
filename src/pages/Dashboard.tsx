@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { Project, Record, Form, User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -55,6 +56,8 @@ export default function Dashboard() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <ConnectionStatus />
+      
       <div className="flex items-center justify-between space-y-2">
         <div className="flex items-center space-x-2">
           <SidebarTrigger />

@@ -1,0 +1,40 @@
+{
+  "name": "Project",
+  "description": "Research projects containing forms and data",
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "Name of the research project"
+    },
+    "description": {
+      "type": "string",
+      "description": "Project description and objectives"
+    },
+    "principal_investigator": {
+      "type": "string",
+      "description": "Principal investigator name"
+    },
+    "institution": {
+      "type": "string",
+      "description": "Institution conducting the research"
+    },
+    "irb_number": {
+      "type": "string",
+      "description": "IRB approval number"
+    },
+    "status": {
+      "type": "string",
+      "description": "Project status",
+      "enum": ["development", "production", "analysis", "completed"],
+      "default": "development"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "User ID of the project owner"
+    },
+    "settings": {
+      "type": "object",
+      "description": "Project configuration settings"
+    }
+  }
+}

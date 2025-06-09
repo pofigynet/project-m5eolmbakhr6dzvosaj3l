@@ -1,0 +1,36 @@
+{
+  "name": "User",
+  "description": "User accounts with role-based access control",
+  "properties": {
+    "username": {
+      "type": "string",
+      "description": "Unique username for the user"
+    },
+    "first_name": {
+      "type": "string",
+      "description": "User's first name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "User's last name"
+    },
+    "institution": {
+      "type": "string",
+      "description": "User's institution or organization"
+    },
+    "user_role": {
+      "type": "string",
+      "description": "User role: admin, researcher, data_entry, viewer",
+      "enum": ["admin", "researcher", "data_entry", "viewer"]
+    },
+    "is_active": {
+      "type": "boolean",
+      "description": "Whether the user account is active",
+      "default": true
+    },
+    "last_login": {
+      "type": "string",
+      "description": "Last login timestamp"
+    }
+  }
+}

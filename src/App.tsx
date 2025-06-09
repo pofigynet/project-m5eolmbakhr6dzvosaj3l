@@ -3,7 +3,18 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
 import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
+import Projects from "./pages/Projects";
+import ProjectDetail from "./pages/ProjectDetail";
+import FormBuilder from "./pages/FormBuilder";
+import DataEntry from "./pages/DataEntry";
+import QualityControl from "./pages/QualityControl";
+import UserManagement from "./pages/UserManagement";
+import Assistant from "./pages/Assistant";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -14,11 +25,26 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full">
+            <AppSidebar />
+            <SidebarInset>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:id" element={<ProjectDetail />} />
+                <Route path="/projects/:id/forms/new" element={<FormBuilder />} />
+                <Route path="/projects/:id/forms/:formId/edit" element={<FormBuilder />} />
+                <Route path="/projects/:id/data-entry" element={<DataEntry />} />
+                <Route path="/quality-control" element={<QualityControl />} />
+                <Route path="/users" element={<UserManagement />} />
+                <Route path="/assistant" element={<Assistant />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SidebarInset>
+          </div>
+        </SidebarProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

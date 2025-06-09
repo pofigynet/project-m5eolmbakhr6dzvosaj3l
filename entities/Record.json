@@ -1,0 +1,39 @@
+{
+  "name": "Record",
+  "description": "Data records entered through forms",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "ID of the parent project"
+    },
+    "form_id": {
+      "type": "string",
+      "description": "ID of the form used for data entry"
+    },
+    "record_id": {
+      "type": "string",
+      "description": "Unique record identifier within the project"
+    },
+    "data": {
+      "type": "object",
+      "description": "JSON object containing the form data"
+    },
+    "validation_status": {
+      "type": "string",
+      "description": "Validation status of the record",
+      "enum": ["valid", "invalid", "pending"],
+      "default": "pending"
+    },
+    "validation_errors": {
+      "type": "array",
+      "description": "Array of validation error messages",
+      "items": {
+        "type": "string"
+      }
+    },
+    "entered_by": {
+      "type": "string",
+      "description": "User ID who entered the data"
+    }
+  }
+}

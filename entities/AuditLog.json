@@ -1,0 +1,30 @@
+{
+  "name": "AuditLog",
+  "description": "Audit trail for all system activities",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user who performed the action"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "ID of the affected project"
+    },
+    "action": {
+      "type": "string",
+      "description": "Type of action performed"
+    },
+    "details": {
+      "type": "object",
+      "description": "Additional details about the action"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address of the user"
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "When the action occurred"
+    }
+  }
+}

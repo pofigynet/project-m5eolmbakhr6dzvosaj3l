@@ -1,0 +1,31 @@
+{
+  "name": "Form",
+  "description": "Data collection forms within projects",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "ID of the parent project"
+    },
+    "form_name": {
+      "type": "string",
+      "description": "Name of the form"
+    },
+    "description": {
+      "type": "string",
+      "description": "Form description"
+    },
+    "schema": {
+      "type": "object",
+      "description": "JSON schema defining form fields and validation rules"
+    },
+    "is_active": {
+      "type": "boolean",
+      "description": "Whether the form is active for data entry",
+      "default": true
+    },
+    "order_index": {
+      "type": "number",
+      "description": "Display order within the project"
+    }
+  }
+}

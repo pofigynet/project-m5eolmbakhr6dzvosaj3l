@@ -4,21 +4,39 @@ import { Wifi, WifiOff } from "lucide-react";
 
 export function ConnectionStatus() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [showOfflineAlert, setShowOfflineAlert] = useState(false);
+  const [showOfflineMessage, setShowOfflineMessage] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      setShowOfflineAlert(false);
+      setShowOfflineMessage(false);
     };
 
     const handleOffline = () => {
       setIsOnline(false);
-      setShowOfflineAlert(true);
+      setShowOfflineMessage(true);
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Check if we're running in fallback mode
+    const checkConnectionStatus = async () => {
+      try {
+        // Try to make a simple request to check connectivity
+        const response = await fetch('/api/health', { 
+          method: 'HEAD',
+          cache: 'no-cache'
+        });
+        if (!response.ok) {
+          setShowOfflineMessage(true);
+        }
+      } catch (error) {
+        setShowOfflineMessage(true);
+      }
+    };
+
+    checkConnectionStatus();
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -26,13 +44,16 @@ export function ConnectionStatus() {
     };
   }, []);
 
-  if (!showOfflineAlert) return null;
+  if (!showOfflineMessage && isOnline) {
+    return null;
+  }
 
   return (
-    <Alert className="mb-4 border-orange-200 bg-orange-50">
-      <WifiOff className="h-4 w-4" />
-      <AlertDescription>
-        You're currently offline. Some features may not work properly until your connection is restored.
+    <Alert className="mb-4 border-yellow-200 bg-yellow-50">
+      <WifiOff className="h-4 w-4 text-yellow-600" />
+      <AlertDescription className="text-yellow-800">
+        <strong>Limited connectivity detected.</strong> The application is running in offline mode with sample data. 
+        Some features may be unavailable until connection is restored.
       </AlertDescription>
     </Alert>
   );

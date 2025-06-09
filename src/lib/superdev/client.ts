@@ -1,6 +1,6 @@
 import { createSuperdevClient } from "@superdevhq/client";
 
-let superdevClient: any = null;
+let clientInstance: any = null;
 let initializationAttempted = false;
 
 // Create a fallback client with mock methods
@@ -43,7 +43,7 @@ const createFallbackClient = () => ({
 // Lazy initialization function
 const initializeSuperdevClient = async () => {
   if (initializationAttempted) {
-    return superdevClient;
+    return clientInstance;
   }
   
   initializationAttempted = true;
@@ -54,11 +54,11 @@ const initializeSuperdevClient = async () => {
     // Check if required environment variables are available
     if (!import.meta.env.VITE_APP_ID || !import.meta.env.VITE_SUPERDEV_BASE_URL) {
       console.warn("Missing required environment variables, using fallback client");
-      superdevClient = createFallbackClient();
-      return superdevClient;
+      clientInstance = createFallbackClient();
+      return clientInstance;
     }
 
-    superdevClient = createSuperdevClient({
+    clientInstance = createSuperdevClient({
       appId: import.meta.env.VITE_APP_ID,
       requiresAuth: true,
       baseUrl: import.meta.env.VITE_SUPERDEV_BASE_URL,
@@ -70,11 +70,11 @@ const initializeSuperdevClient = async () => {
     });
     
     console.log("Superdev client initialized successfully");
-    return superdevClient;
+    return clientInstance;
   } catch (error) {
     console.error("Failed to initialize Superdev client:", error);
-    superdevClient = createFallbackClient();
-    return superdevClient;
+    clientInstance = createFallbackClient();
+    return clientInstance;
   }
 };
 

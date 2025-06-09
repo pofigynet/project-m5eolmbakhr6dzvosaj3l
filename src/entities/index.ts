@@ -1,9 +1,7 @@
-// Import the superdev client properly
-import { superdevClient } from '@/lib/superdev/client';
-
-// Create proper entity wrappers using the existing client
-export const AuditLog = superdevClient.entity("AuditLog");
-export const Form = superdevClient.entity("Form");
-export const Project = superdevClient.entity("Project");
-export const Record = superdevClient.entity("Record");
-export const User = superdevClient.auth;
+// Use the built-in Superdev entities pattern
+// Import entities directly from @/entities which is provided by the platform
+export { AuditLog } from '@/entities/AuditLog';
+export { Form } from '@/entities/Form';
+export { Project } from '@/entities/Project';
+export { Record } from '@/entities/Record';
+export { User } from '@/entities/User';

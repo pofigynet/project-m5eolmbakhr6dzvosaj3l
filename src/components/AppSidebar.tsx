@@ -1,30 +1,20 @@
+import { Calendar, Home, Inbox, Search, Settings, Users, FileText, BarChart3, MessageCircle, FolderOpen } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { 
-  Home, 
-  FolderOpen, 
-  FileText, 
-  BarChart3, 
-  Users, 
-  MessageCircle,
-  Database,
-  Settings,
-  Shield,
-  FormInput
-} from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
 
-const navigationItems = [
+// Menu items
+const items = [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -38,7 +28,7 @@ const navigationItems = [
   {
     title: "Form Builder",
     url: "/form-builder",
-    icon: FormInput,
+    icon: FileText,
   },
   {
     title: "Quality Control",
@@ -46,28 +36,12 @@ const navigationItems = [
     icon: BarChart3,
   },
   {
-    title: "Data Export",
-    url: "/export",
-    icon: Database,
-  },
-];
-
-const adminItems = [
-  {
-    title: "User Management",
+    title: "Users",
     url: "/users",
     icon: Users,
   },
   {
-    title: "System Settings",
-    url: "/settings",
-    icon: Settings,
-  },
-];
-
-const supportItems = [
-  {
-    title: "Research Assistant",
+    title: "Assistant",
     url: "/assistant",
     icon: MessageCircle,
   },
@@ -78,67 +52,24 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-4 py-2">
-          <Shield className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="font-semibold text-lg">REDCap Lite</h1>
-            <p className="text-xs text-muted-foreground">Clinical Research Platform</p>
+      <SidebarHeader className="p-4">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <FileText className="w-4 h-4 text-primary-foreground" />
           </div>
+          <span className="font-semibold text-lg">REDCap Lite</span>
         </div>
       </SidebarHeader>
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Support</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {supportItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
+                    asChild 
                     isActive={location.pathname === item.url}
                   >
                     <Link to={item.url}>
@@ -152,13 +83,10 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <SidebarFooter className="border-t border-sidebar-border">
-        <div className="p-4">
-          <div className="text-xs text-muted-foreground">
-            <p>Version 1.0.0</p>
-            <p>© 2024 REDCap Lite</p>
-          </div>
+      
+      <SidebarFooter className="p-4">
+        <div className="text-xs text-muted-foreground">
+          Research Data Platform
         </div>
       </SidebarFooter>
     </Sidebar>

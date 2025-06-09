@@ -28,6 +28,8 @@ const queryClient = new QueryClient({
       // Add error handling for network failures
       retryOnMount: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      // Don't throw errors for failed queries, handle them gracefully
+      throwOnError: false,
     },
   },
 });

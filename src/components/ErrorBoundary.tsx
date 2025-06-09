@@ -1,62 +1,63 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
-interface Props {
-  children: ReactNode;
-}
-
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
 
-  public static getDerivedStateFromError(error: Error): State {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
-  private handleRetry = () => {
-    this.setState({ hasError: false, error: undefined });
-    window.location.reload();
-  };
-
-  public render() {
+  render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center p-4">
-          <Card className="max-w-md w-full">
+          <Card className="w-full max-w-md">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
-              <CardTitle>Connection Error</CardTitle>
+              <CardTitle>Something went wrong</CardTitle>
               <CardDescription>
-                We're having trouble connecting to our services. This might be a temporary network issue.
+                An error occurred while loading the application. Please try refreshing the page.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                <p>What you can try:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Check your internet connection</li>
-                  <li>Refresh the page</li>
-                  <li>Try again in a few minutes</li>
-                </ul>
-              </div>
-              <Button onClick={this.handleRetry} className="w-full">
+            <CardContent className="text-center">
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="w-full"
+              >
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Retry Connection
+                Refresh Page
               </Button>
+              {this.state.error && (
+                <details className="mt-4 text-left">
+                  <summary className="cursor-pointer text-sm text-muted-foreground">
+                    Error Details
+                  </summary>
+                  <pre className="mt-2 text-xs text-red-600 overflow-auto">
+                    {this.state.error.message}
+                  </pre>
+                </details>
+              )}
             </CardContent>
           </Card>
         </div>

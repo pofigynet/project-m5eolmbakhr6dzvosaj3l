@@ -158,6 +158,7 @@ export default function FormBuilder() {
     try {
       const schema = {
         fields: fields.map(field => ({
+          id: field.id,
           name: field.name,
           type: field.type,
           label: field.label,
@@ -285,7 +286,7 @@ export default function FormBuilder() {
           <CardHeader>
             <CardTitle>Field Types</CardTitle>
             <CardDescription>
-              Drag or click to add fields to your form
+              Click to add fields to your form
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">

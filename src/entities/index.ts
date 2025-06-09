@@ -1,10 +1,9 @@
-import { createClient } from '@superdevhq/client';
+// Import the superdev client properly
+import { superdevClient } from '@/lib/superdev/client';
 
-const client = createClient();
-
-// Create proper entity wrappers
-export const AuditLog = client.entity("AuditLog");
-export const Form = client.entity("Form");
-export const Project = client.entity("Project");
-export const Record = client.entity("Record");
-export const User = client.auth;
+// Create proper entity wrappers using the existing client
+export const AuditLog = superdevClient.entity("AuditLog");
+export const Form = superdevClient.entity("Form");
+export const Project = superdevClient.entity("Project");
+export const Record = superdevClient.entity("Record");
+export const User = superdevClient.auth;

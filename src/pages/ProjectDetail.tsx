@@ -13,16 +13,22 @@ import {
   BarChart3,
   Calendar,
   Building,
-  Shield
+  Shield,
+  Edit
 } from "lucide-react";
 import { Project, Form, Record, User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
+  const [settings, setSettings] = useState<any>({});
 
-  const { data: project } = useQuery({
+  const { data: project, refetch: refetchProject } = useQuery({
     queryKey: ['project', id],
     queryFn: () => Project.get(id!),
     enabled: !!id,
@@ -44,6 +50,27 @@ export default function ProjectDetail() {
     queryKey: ['users'],
     queryFn: () => User.list(),
   });
+
+  // Initialize settings when project loads
+  useState(() => {
+    if (project?.settings) {
+      setSettings(project.settings);
+    }
+  }, [project]);
+
+  const handleSaveSettings = async () => {
+    try {
+      await Project.update(id!, {
+        settings: settings
+      });
+      toast.success("Settings updated successfully!");
+      setIsEditingSettings(false);
+      refetchProject();
+    } catch (error) {
+      toast.error("Failed to update settings");
+      console.error("Error updating settings:", error);
+    }
+  };
 
   if (!project) {
     return (
@@ -85,7 +112,7 @@ export default function ProjectDetail() {
         <div className="flex items-center space-x-2">
           <SidebarTrigger />
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/projects">
+            <Link to="/projects/list">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Link>
@@ -317,43 +344,130 @@ export default function ProjectDetail() {
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Project Settings</CardTitle>
-              <CardDescription>
-                Configure project options and permissions
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Project Settings</CardTitle>
+                  <CardDescription>
+                    Configure project options and permissions
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant={isEditingSettings ? "default" : "outline"}
+                  onClick={() => {
+                    if (isEditingSettings) {
+                      handleSaveSettings();
+                    } else {
+                      setIsEditingSettings(true);
+                      setSettings(project.settings || {});
+                    }
+                  }}
+                >
+                  {isEditingSettings ? (
+                    <>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Save Settings
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Settings
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium">Data Validation</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {project.settings?.data_validation ? 'Enabled' : 'Disabled'}
-                    </p>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="data_validation">Data Validation</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Enable automatic data validation rules
+                        </p>
+                      </div>
+                      <Switch
+                        id="data_validation"
+                        checked={settings.data_validation || false}
+                        onCheckedChange={(checked) => 
+                          setSettings({ ...settings, data_validation: checked })
+                        }
+                        disabled={!isEditingSettings}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="audit_logging">Audit Logging</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Track all user actions and changes
+                        </p>
+                      </div>
+                      <Switch
+                        id="audit_logging"
+                        checked={settings.audit_logging || false}
+                        onCheckedChange={(checked) => 
+                          setSettings({ ...settings, audit_logging: checked })
+                        }
+                        disabled={!isEditingSettings}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium">Audit Logging</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {project.settings?.audit_logging ? 'Enabled' : 'Disabled'}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">User Access Control</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {project.settings?.user_access_control ? 'Enabled' : 'Disabled'}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Auto Backup</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {project.settings?.auto_backup ? 'Enabled' : 'Disabled'}
-                    </p>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="user_access_control">User Access Control</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Enable role-based permissions
+                        </p>
+                      </div>
+                      <Switch
+                        id="user_access_control"
+                        checked={settings.user_access_control || false}
+                        onCheckedChange={(checked) => 
+                          setSettings({ ...settings, user_access_control: checked })
+                        }
+                        disabled={!isEditingSettings}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="auto_backup">Auto Backup</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Automatically backup project data
+                        </p>
+                      </div>
+                      <Switch
+                        id="auto_backup"
+                        checked={settings.auto_backup || false}
+                        onCheckedChange={(checked) => 
+                          setSettings({ ...settings, auto_backup: checked })
+                        }
+                        disabled={!isEditingSettings}
+                      />
+                    </div>
                   </div>
                 </div>
-                <Button variant="outline">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Edit Settings
-                </Button>
+
+                {isEditingSettings && (
+                  <div className="flex items-center space-x-2 pt-4 border-t">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setIsEditingSettings(false);
+                        setSettings(project.settings || {});
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveSettings}>
+                      Save Changes
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -185,7 +185,7 @@ export default function Projects() {
             <SelectValue placeholder="Select project to view details" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Projects</SelectItem>
+            <SelectItem value="all-projects">All Projects</SelectItem>
             {projects.map((project) => (
               <SelectItem key={project.id} value={project.id}>
                 {project.project_name}
@@ -223,7 +223,7 @@ export default function Projects() {
       </Card>
 
       {/* Project Data Table */}
-      {selectedProjectData && (
+      {selectedProjectData && selectedProject !== "all-projects" && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -290,6 +290,18 @@ export default function Projects() {
                 <p>No participants found for this project</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedProject === "all-projects" && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Filter className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">All Projects View</h3>
+            <p className="text-muted-foreground">
+              Select a specific project from the dropdown above to view detailed participant completion status
+            </p>
           </CardContent>
         </Card>
       )}

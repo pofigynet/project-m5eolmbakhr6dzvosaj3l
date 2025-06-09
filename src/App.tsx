@@ -9,7 +9,6 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
-import ProjectsDashboard from "./pages/ProjectsDashboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import FormBuilder from "./pages/FormBuilder";
 import FormBuilderStandalone from "./pages/FormBuilderStandalone";
@@ -42,8 +41,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/projects" element={<ProjectsDashboard />} />
-                <Route path="/projects/list" element={<Projects />} />
+                <Route path="/projects" element={<Projects />} />
                 <Route path="/projects/:id" element={<ProjectDetail />} />
                 <Route path="/projects/:id/forms/new" element={<FormBuilder />} />
                 <Route path="/projects/:id/forms/:formId/edit" element={<FormBuilder />} />

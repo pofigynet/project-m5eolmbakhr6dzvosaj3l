@@ -14,7 +14,8 @@ import {
   Calendar,
   Building,
   Shield,
-  Edit
+  Edit,
+  CheckCircle
 } from "lucide-react";
 import { Project, Form, Record, User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
@@ -112,7 +113,7 @@ export default function ProjectDetail() {
         <div className="flex items-center space-x-2">
           <SidebarTrigger />
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/projects/list">
+            <Link to="/projects">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Link>

@@ -2,25 +2,27 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Plus, FileText, FormInput, Zap } from "lucide-react";
+import { Plus, FileText, Edit, Eye, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Project, Form } from "@/entities";
+import { Form, Project } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
 
 export default function FormBuilderStandalone() {
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => Project.list(),
-  });
-
   const { data: forms = [] } = useQuery({
     queryKey: ['forms'],
     queryFn: () => Form.list(),
   });
 
-  const recentForms = forms
-    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-    .slice(0, 5);
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => Project.list(),
+  });
+
+  // Create a map of project names for quick lookup
+  const projectMap = projects.reduce((acc, project) => {
+    acc[project.id] = project.project_name;
+    return acc;
+  }, {} as Record<string, string>);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -40,168 +42,127 @@ export default function FormBuilderStandalone() {
       </div>
 
       <div className="space-y-4">
-        <p className="text-muted-foreground">
-          Design and build custom data collection forms for your research projects.
-        </p>
-
-        {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" asChild>
-            <Link to="/form-builder/new">
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <Plus className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Create New Form</CardTitle>
-                </div>
-                <CardDescription>
-                  Start building a new data collection form from scratch
-                </CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <FormInput className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">Form Templates</CardTitle>
-              </div>
-              <CardDescription>
-                Use pre-built templates for common research scenarios
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full" disabled>
-                Coming Soon
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Zap className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">AI Form Generator</CardTitle>
-              </div>
-              <CardDescription>
-                Generate forms automatically using AI assistance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full" disabled>
-                Coming Soon
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Forms */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Forms</CardTitle>
+            <CardTitle>Form Management</CardTitle>
             <CardDescription>
-              Forms you've worked on recently
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentForms.map((form) => {
-                const project = projects.find(p => p.id === form.project_id);
-                return (
-                  <div key={form.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
-                    <div className="space-y-1">
-                      <h4 className="font-medium">{form.form_name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Project: {project?.project_name || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Last modified: {new Date(form.updated_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/projects/${form.project_id}/forms/${form.id}/edit`}>
-                          Edit
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Preview
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-              {recentForms.length === 0 && (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">No forms yet</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Create your first form to get started with data collection.
-                  </p>
-                  <Button className="mt-4" asChild>
-                    <Link to="/form-builder/new">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Form
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Projects Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Projects</CardTitle>
-            <CardDescription>
-              Select a project to create forms for
+              Create and manage data collection forms for your research projects
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => {
-                const projectForms = forms.filter(f => f.project_id === project.id);
-                return (
-                  <Card key={project.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{project.project_name}</CardTitle>
-                      <CardDescription className="line-clamp-2">
-                        {project.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Forms:</span>
-                          <span>{projectForms.length}</span>
-                        </div>
-                        <Button variant="outline" size="sm" className="w-full" asChild>
-                          <Link to={`/projects/${project.id}/forms/new`}>
-                            Add Form
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              {projects.length === 0 && (
-                <div className="col-span-full text-center py-8">
-                  <p className="text-muted-foreground">
-                    No projects available. Create a project first to build forms.
+              {/* Create New Form Card */}
+              <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+                <CardContent className="flex flex-col items-center justify-center p-6 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                    <Plus className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Create New Form</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Build a new data collection form with our drag-and-drop builder
                   </p>
-                  <Button className="mt-4" asChild>
-                    <Link to="/projects">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Project
-                    </Link>
+                  <Button asChild>
+                    <Link to="/form-builder/new">Get Started</Link>
                   </Button>
-                </div>
-              )}
+                </CardContent>
+              </Card>
+
+              {/* Existing Forms */}
+              {forms.map((form) => (
+                <Card key={form.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">{form.form_name}</CardTitle>
+                        <CardDescription className="text-sm">
+                          Project: {projectMap[form.project_id] || 'Unknown Project'}
+                        </CardDescription>
+                      </div>
+                      <div className={`px-2 py-1 text-xs rounded-full ${
+                        form.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {form.is_active ? 'Active' : 'Inactive'}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {form.description || 'No description provided'}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                      <span>Fields: {form.schema?.fields?.length || 0}</span>
+                      <span>Order: {form.order_index}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/projects/${form.project_id}/forms/${form.id}/edit`}>
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Preview
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+
+            {forms.length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No forms yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create your first data collection form to get started
+                </p>
+                <Button asChild>
+                  <Link to="/form-builder/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Your First Form
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Form Builder Features */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Drag & Drop Builder</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Easily create forms with our intuitive drag-and-drop interface. Add text fields, dropdowns, checkboxes, and more.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Real-time Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                See how your form will look as you build it. Test field validation and user experience in real-time.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Advanced Validation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Set up complex validation rules, required fields, and data formats to ensure data quality.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

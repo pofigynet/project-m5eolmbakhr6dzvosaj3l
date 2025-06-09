@@ -3,9 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { MessageCircle, Send, Bot, User, Lightbulb, FileText, BarChart3, Users } from "lucide-react";
+import { MessageCircle, Send, Bot, User, Lightbulb, FileText, BarChart3 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { invokeLLM } from "@/integrations/core";
 import { toast } from "sonner";
 
@@ -16,90 +15,119 @@ interface Message {
   timestamp: Date;
 }
 
-const quickQuestions = [
-  {
-    icon: FileText,
-    title: "How do I create a new form?",
-    description: "Learn about form building and field types",
-  },
-  {
-    icon: BarChart3,
-    title: "Understanding data validation",
-    description: "Best practices for quality control",
-  },
-  {
-    icon: Users,
-    title: "Managing user permissions",
-    description: "Role-based access control setup",
-  },
-  {
-    icon: Lightbulb,
-    title: "Export data formats",
-    description: "Available export options and formats",
-  },
-];
-
 export default function Assistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'assistant',
-      content: "Hello! I'm your REDCap Lite research assistant. I can help you with data management, form creation, quality control, and best practices for clinical research. What would you like to know?",
+      content: 'Hello! I\'m your Research Assistant. I can help you with research data management, form design, statistical analysis, and methodology questions. How can I assist you today?',
       timestamp: new Date(),
-    },
+    }
   ]);
-  const [inputValue, setInputValue] = useState("");
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = async (message?: string) => {
-    const messageText = message || inputValue.trim();
-    if (!messageText) return;
+  const predefinedQuestions = [
+    {
+      icon: FileText,
+      title: "Form Design",
+      question: "What are best practices for designing data collection forms in clinical research?"
+    },
+    {
+      icon: BarChart3,
+      title: "Data Analysis",
+      question: "How should I structure my data for statistical analysis?"
+    },
+    {
+      icon: Lightbulb,
+      title: "Methodology",
+      question: "What validation methods should I use for my research data?"
+    }
+  ];
+
+  const handleSendMessage = async (messageText?: string) => {
+    const text = messageText || input.trim();
+    if (!text) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: messageText,
+      content: text,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputValue("");
+    setInput('');
     setIsLoading(true);
 
     try {
+      // Create a comprehensive prompt for research assistance
+      const prompt = `You are a research data management assistant. The user asked: "${text}"
+
+Please provide helpful, accurate information about research data management, form design, data collection best practices, statistical analysis, or research methodology. 
+
+Keep your response:
+- Professional and academic in tone
+- Practical and actionable
+- Specific to research contexts
+- Well-structured with clear points
+
+If the question is about:
+- Form design: Focus on best practices, field types, validation, user experience
+- Data analysis: Discuss data structure, quality control, statistical considerations
+- Methodology: Cover research design, data collection protocols, validation methods
+- General research: Provide relevant guidance for academic/clinical research
+
+Response:`;
+
       const response = await invokeLLM({
-        prompt: `You are a helpful research assistant for a clinical data management platform called REDCap Lite. 
-        The user is asking: "${messageText}"
-        
-        Provide helpful, accurate information about:
-        - Clinical research data management
-        - Form design and validation
-        - Data quality control
-        - User management and permissions
-        - Export and analysis workflows
-        - Best practices for research data
-        
-        Keep responses concise but informative. If the question is about specific technical features, provide step-by-step guidance.`,
+        prompt,
+        add_context_from_internet: true,
       });
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: response,
+        content: typeof response === 'string' ? response : 'I apologize, but I encountered an issue processing your request. Please try rephrasing your question.',
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      toast.error("Failed to get response from assistant");
-      console.error("Assistant error:", error);
+      console.error('Error getting assistant response:', error);
+      
+      // Provide a helpful fallback response based on the question type
+      let fallbackResponse = "I'm here to help with research data management questions. ";
+      
+      if (text.toLowerCase().includes('form')) {
+        fallbackResponse += "For form design, consider using clear field labels, appropriate validation rules, logical field ordering, and user-friendly interfaces. Would you like specific guidance on any aspect of form creation?";
+      } else if (text.toLowerCase().includes('data') || text.toLowerCase().includes('analysis')) {
+        fallbackResponse += "For data management, focus on data quality, consistent formatting, proper validation, and secure storage. Consider using standardized data collection protocols and regular quality checks.";
+      } else if (text.toLowerCase().includes('research') || text.toLowerCase().includes('study')) {
+        fallbackResponse += "For research methodology, ensure your data collection methods align with your research objectives, use appropriate sample sizes, implement proper controls, and follow ethical guidelines.";
+      } else {
+        fallbackResponse += "I can help with form design, data collection strategies, quality control methods, and research best practices. What specific area would you like to explore?";
+      }
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: fallbackResponse,
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      toast.error("Using offline mode - limited functionality available");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleQuickQuestion = (question: string) => {
-    handleSendMessage(question);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
@@ -111,73 +139,21 @@ export default function Assistant() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Quick Questions */}
-        <div className="space-y-4">
-          <Card>
+      <div className="grid gap-4 md:grid-cols-4">
+        {/* Chat Interface */}
+        <div className="md:col-span-3">
+          <Card className="h-[600px] flex flex-col">
             <CardHeader>
-              <CardTitle className="text-lg">Quick Help</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageCircle className="h-5 w-5" />
+                <span>AI Research Assistant</span>
+              </CardTitle>
               <CardDescription>
-                Common questions and topics
+                Get help with research methodology, data management, and form design
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {quickQuestions.map((question, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="w-full justify-start h-auto p-3"
-                  onClick={() => handleQuickQuestion(question.title)}
-                >
-                  <div className="flex items-start space-x-3">
-                    <question.icon className="h-5 w-5 mt-0.5 text-primary" />
-                    <div className="text-left">
-                      <div className="font-medium text-sm">{question.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {question.description}
-                      </div>
-                    </div>
-                  </div>
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Tips</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <Badge variant="secondary" className="w-full justify-start">
-                  <Lightbulb className="h-3 w-3 mr-2" />
-                  Use specific field names in questions
-                </Badge>
-                <Badge variant="secondary" className="w-full justify-start">
-                  <Lightbulb className="h-3 w-3 mr-2" />
-                  Ask about validation rules
-                </Badge>
-                <Badge variant="secondary" className="w-full justify-start">
-                  <Lightbulb className="h-3 w-3 mr-2" />
-                  Request step-by-step guides
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Chat Interface */}
-        <div className="md:col-span-2">
-          <Card className="h-[600px] flex flex-col">
-            <CardHeader className="border-b">
-              <div className="flex items-center space-x-2">
-                <Bot className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">Chat with Assistant</CardTitle>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="flex-1 p-0">
-              <ScrollArea className="h-full p-4">
+            <CardContent className="flex-1 flex flex-col p-0">
+              <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
                   {messages.map((message) => (
                     <div
@@ -187,17 +163,14 @@ export default function Assistant() {
                       }`}
                     >
                       {message.type === 'assistant' && (
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                            <Bot className="h-4 w-4 text-primary-foreground" />
-                          </div>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Bot className="h-4 w-4 text-primary" />
                         </div>
                       )}
-                      
                       <div
                         className={`max-w-[80%] rounded-lg p-3 ${
                           message.type === 'user'
-                            ? 'bg-primary text-primary-foreground ml-auto'
+                            ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         }`}
                       >
@@ -206,55 +179,100 @@ export default function Assistant() {
                           {message.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
-
                       {message.type === 'user' && (
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                            <User className="h-4 w-4 text-secondary-foreground" />
-                          </div>
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary-foreground" />
                         </div>
                       )}
                     </div>
                   ))}
-                  
                   {isLoading && (
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                          <Bot className="h-4 w-4 text-primary-foreground" />
-                        </div>
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-primary animate-pulse" />
                       </div>
                       <div className="bg-muted rounded-lg p-3">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
+                        <p className="text-sm">Thinking...</p>
                       </div>
                     </div>
                   )}
                 </div>
               </ScrollArea>
-            </CardContent>
-
-            <div className="border-t p-4">
-              <div className="flex space-x-2">
-                <Input
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Ask me anything about research data management..."
-                  onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
-                  disabled={isLoading}
-                />
-                <Button 
-                  onClick={() => handleSendMessage()} 
-                  disabled={!inputValue.trim() || isLoading}
-                  size="icon"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
+              <div className="p-4 border-t">
+                <div className="flex space-x-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask about research methodology, data management, or form design..."
+                    disabled={isLoading}
+                  />
+                  <Button 
+                    onClick={() => handleSendMessage()} 
+                    disabled={isLoading || !input.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Questions */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Quick Questions</CardTitle>
+              <CardDescription>
+                Common research topics to get started
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {predefinedQuestions.map((item, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="w-full h-auto p-3 text-left justify-start"
+                  onClick={() => handleSendMessage(item.question)}
+                  disabled={isLoading}
+                >
+                  <div className="flex items-start space-x-3">
+                    <item.icon className="h-4 w-4 mt-0.5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">{item.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {item.question.substring(0, 50)}...
+                      </p>
+                    </div>
+                  </div>
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Assistant Features</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Research methodology guidance</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Form design best practices</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Data quality strategies</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Statistical analysis tips</span>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>

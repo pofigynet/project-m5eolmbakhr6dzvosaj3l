@@ -6,10 +6,6 @@ import { Plus, FolderOpen, FileText, Users, AlertTriangle, CheckCircle, MessageC
 import { Link } from "react-router-dom";
 import { Project, Record, Form, User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ConnectionStatus } from "@/components/ConnectionStatus";
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function Dashboard() {
   const { data: projects = [] } = useQuery({
@@ -17,14 +13,14 @@ export default function Dashboard() {
     queryFn: () => Project.list(),
   });
 
-  const { data: records = [] } = useQuery({
-    queryKey: ['records'],
-    queryFn: () => Record.list(),
-  });
-
   const { data: forms = [] } = useQuery({
     queryKey: ['forms'],
     queryFn: () => Form.list(),
+  });
+
+  const { data: records = [] } = useQuery({
+    queryKey: ['records'],
+    queryFn: () => Record.list(),
   });
 
   const { data: users = [] } = useQuery({
@@ -32,32 +28,42 @@ export default function Dashboard() {
     queryFn: () => User.list(),
   });
 
-  // Calculate statistics
-  const stats = {
-    totalProjects: projects.length,
-    totalRecords: records.length,
-    totalForms: forms.length,
-    activeUsers: users.filter(u => u.is_active).length,
-    validRecords: records.filter(r => r.validation_status === 'valid').length,
-    invalidRecords: records.filter(r => r.validation_status === 'invalid').length,
-  };
-
-  // Data for charts
-  const validationData = [
-    { name: 'Valid', value: stats.validRecords, color: '#00C49F' },
-    { name: 'Invalid', value: stats.invalidRecords, color: '#FF8042' },
-    { name: 'Pending', value: records.filter(r => r.validation_status === 'pending').length, color: '#FFBB28' },
+  const stats = [
+    {
+      title: "Active Projects",
+      value: projects.filter(p => p.status !== 'completed').length,
+      icon: FolderOpen,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+    },
+    {
+      title: "Total Forms",
+      value: forms.length,
+      icon: FileText,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+    },
+    {
+      title: "Data Records",
+      value: records.length,
+      icon: CheckCircle,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+    },
+    {
+      title: "Team Members",
+      value: users.length,
+      icon: Users,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
+    },
   ];
 
-  const projectData = projects.slice(0, 5).map(project => ({
-    name: project.project_name.substring(0, 20),
-    records: records.filter(r => r.project_id === project.id).length,
-  }));
+  const recentProjects = projects.slice(0, 5);
+  const recentForms = forms.slice(0, 5);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <ConnectionStatus />
-      
       <div className="flex items-center justify-between space-y-2">
         <div className="flex items-center space-x-2">
           <SidebarTrigger />
@@ -73,119 +79,28 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProjects}</div>
-            <p className="text-xs text-muted-foreground">
-              Active research studies
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Records</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRecords}</div>
-            <p className="text-xs text-muted-foreground">
-              Total data entries
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Registered researchers
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Quality</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.totalRecords > 0 ? Math.round((stats.validRecords / stats.totalRecords) * 100) : 0}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Valid records
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Records by Project</CardTitle>
-            <CardDescription>
-              Data collection progress across projects
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={projectData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="records" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Data Validation Status</CardTitle>
-            <CardDescription>
-              Quality control overview
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <PieChart>
-                <Pie
-                  data={validationData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {validationData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Recent Activity */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
           <CardHeader>
             <CardTitle>Recent Projects</CardTitle>
             <CardDescription>
@@ -194,69 +109,122 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {projects.slice(0, 5).map((project) => (
-                <div key={project.id} className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {project.project_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {project.principal_investigator} • {project.institution}
-                    </p>
+              {recentProjects.length > 0 ? (
+                recentProjects.map((project) => (
+                  <div key={project.id} className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {project.project_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {project.principal_investigator}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        project.status === 'production' ? 'bg-green-100 text-green-800' :
+                        project.status === 'development' ? 'bg-blue-100 text-blue-800' :
+                        project.status === 'analysis' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {project.status}
+                      </span>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/projects/${project.id}`}>View</Link>
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      project.status === 'production' ? 'bg-green-100 text-green-800' :
-                      project.status === 'development' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {project.status}
-                    </span>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/projects/${project.id}`}>View</Link>
-                    </Button>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <FolderOpen className="mx-auto h-8 w-8 mb-2" />
+                  <p>No projects yet</p>
+                  <Button variant="outline" size="sm" className="mt-2" asChild>
+                    <Link to="/projects">Create your first project</Link>
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="col-span-3">
+        <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>Recent Forms</CardTitle>
             <CardDescription>
-              Common tasks and shortcuts
+              Latest data collection forms
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <Link to="/projects">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Project
-              </Link>
-            </Button>
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <Link to="/quality-control">
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Review Data Quality
-              </Link>
-            </Button>
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <Link to="/assistant">
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Research Assistant
-              </Link>
-            </Button>
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <Link to="/users">
-                <Users className="mr-2 h-4 w-4" />
-                Manage Users
-              </Link>
-            </Button>
+          <CardContent>
+            <div className="space-y-4">
+              {recentForms.length > 0 ? (
+                recentForms.map((form) => (
+                  <div key={form.id} className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {form.form_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {form.description || 'No description'}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        form.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {form.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/projects/${form.project_id}/forms/${form.id}/edit`}>Edit</Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <FileText className="mx-auto h-8 w-8 mb-2" />
+                  <p>No forms yet</p>
+                  <Button variant="outline" size="sm" className="mt-2" asChild>
+                    <Link to="/form-builder">Create your first form</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>
+            Common tasks to get you started
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Button variant="outline" className="h-20 flex-col" asChild>
+              <Link to="/projects">
+                <FolderOpen className="h-6 w-6 mb-2" />
+                Create New Project
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-20 flex-col" asChild>
+              <Link to="/form-builder/new">
+                <FileText className="h-6 w-6 mb-2" />
+                Build a Form
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-20 flex-col" asChild>
+              <Link to="/assistant">
+                <MessageCircle className="h-6 w-6 mb-2" />
+                Research Assistant
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

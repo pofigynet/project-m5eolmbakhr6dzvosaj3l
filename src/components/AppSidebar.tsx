@@ -1,20 +1,28 @@
-import { Calendar, Home, Inbox, Search, Settings, Users, FileText, BarChart3, MessageCircle, FolderOpen } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
+import { 
+  Home, 
+  FolderOpen, 
+  FileText, 
+  Users, 
+  BarChart3, 
+  MessageCircle,
+  Settings,
+  Plus
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
-// Menu items
-const items = [
+const menuItems = [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -36,12 +44,12 @@ const items = [
     icon: BarChart3,
   },
   {
-    title: "Users",
+    title: "User Management",
     url: "/users",
     icon: Users,
   },
   {
-    title: "Assistant",
+    title: "Research Assistant",
     url: "/assistant",
     icon: MessageCircle,
   },
@@ -55,9 +63,12 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <FileText className="w-4 h-4 text-primary-foreground" />
+            <BarChart3 className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-semibold text-lg">REDCap Lite</span>
+          <div>
+            <h2 className="text-lg font-semibold">ResearchHub</h2>
+            <p className="text-xs text-muted-foreground">Data Management</p>
+          </div>
         </div>
       </SidebarHeader>
       
@@ -66,14 +77,14 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
                     isActive={location.pathname === item.url}
                   >
                     <Link to={item.url}>
-                      <item.icon />
+                      <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -86,7 +97,7 @@ export function AppSidebar() {
       
       <SidebarFooter className="p-4">
         <div className="text-xs text-muted-foreground">
-          Research Data Platform
+          Research Data Management Platform v1.0
         </div>
       </SidebarFooter>
     </Sidebar>

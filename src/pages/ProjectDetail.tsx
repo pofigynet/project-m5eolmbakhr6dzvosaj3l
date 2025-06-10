@@ -386,7 +386,7 @@ export default function ProjectDetail() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link to={`/form-builder?edit=${form.id}`}>
+                        <Link to={`/form-builder?edit=${form.id}&project=${id}`}>
                           Edit
                         </Link>
                       </Button>

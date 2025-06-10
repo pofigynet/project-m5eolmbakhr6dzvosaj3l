@@ -1,29 +1,61 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Save, Eye } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 export default function FormBuilder() {
   const { id, formId } = useParams();
-  
+  const isEditing = !!formId;
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center space-x-2">
-        <SidebarTrigger />
-        <Button variant="ghost" size="sm" asChild>
-          <Link to={`/projects/${id}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Project
-          </Link>
-        </Button>
-        <h2 className="text-3xl font-bold tracking-tight">
-          {formId ? 'Edit Form' : 'Create Form'}
-        </h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <SidebarTrigger />
+          <Button variant="ghost" size="sm" asChild>
+            <Link to={`/projects/${id}`}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Project
+            </Link>
+          </Button>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm">
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
+          <Button size="sm">
+            <Save className="mr-2 h-4 w-4" />
+            Save Form
+          </Button>
+        </div>
       </div>
-      
-      <div className="text-center py-12">
-        <p>Form builder coming soon...</p>
+
+      <div>
+        <h1 className="text-3xl font-bold">
+          {isEditing ? 'Edit Form' : 'Create New Form'}
+        </h1>
+        <p className="text-muted-foreground">
+          Design your data collection form with drag-and-drop fields
+        </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Form Builder</CardTitle>
+          <CardDescription>
+            This is a placeholder for the form builder interface
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              Form builder interface will be implemented here
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

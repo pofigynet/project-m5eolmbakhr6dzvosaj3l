@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Search, Settings, FileText, Users, BarChart3, HelpCircle } from "lucide-react";
+import { Home, FolderOpen, BarChart3, Users, Settings, Bot, FileText, Shield } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -9,9 +9,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
 
-// Menu items.
 const items = [
   {
     title: "Home",
@@ -26,22 +26,33 @@ const items = [
   {
     title: "Projects",
     url: "/projects",
+    icon: FolderOpen,
+  },
+];
+
+const toolsItems = [
+  {
+    title: "Form Builder",
+    url: "/form-builder",
     icon: FileText,
   },
   {
     title: "Quality Control",
     url: "/quality-control",
-    icon: Search,
+    icon: Shield,
   },
   {
-    title: "Users",
+    title: "AI Assistant",
+    url: "/assistant",
+    icon: Bot,
+  },
+];
+
+const adminItems = [
+  {
+    title: "User Management",
     url: "/users",
     icon: Users,
-  },
-  {
-    title: "Assistant",
-    url: "/assistant",
-    icon: HelpCircle,
   },
 ];
 
@@ -50,16 +61,64 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
+      <SidebarHeader className="border-b px-6 py-4">
+        <h2 className="text-lg font-semibold">REDCap Clone</h2>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>REDCap Clone</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                  >
                     <Link to={item.url}>
-                      <item.icon />
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {toolsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                  >
+                    <Link to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                  >
+                    <Link to={item.url}>
+                      <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>

@@ -19,7 +19,9 @@ import {
   MessageCircle,
   Database,
   Settings,
-  Shield
+  Shield,
+  Plus,
+  Edit
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -34,6 +36,27 @@ const navigationItems = [
     url: "/projects",
     icon: FolderOpen,
   },
+];
+
+const formItems = [
+  {
+    title: "Form Builder",
+    url: "/form-builder",
+    icon: FileText,
+  },
+  {
+    title: "Create Form",
+    url: "/forms/new",
+    icon: Plus,
+  },
+  {
+    title: "Manage Forms",
+    url: "/forms",
+    icon: Edit,
+  },
+];
+
+const dataItems = [
   {
     title: "Quality Control",
     url: "/quality-control",
@@ -88,6 +111,48 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild
+                    isActive={location.pathname === item.url}
+                  >
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Forms</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {formItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild
+                    isActive={location.pathname === item.url}
+                  >
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Data Management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {dataItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild

@@ -20,7 +20,6 @@ import {
   Database,
   Settings,
   Shield,
-  Plus,
   Edit
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -43,11 +42,6 @@ const formItems = [
     title: "Form Builder",
     url: "/form-builder",
     icon: FileText,
-  },
-  {
-    title: "Create Form",
-    url: "/forms/new",
-    icon: Plus,
   },
   {
     title: "Manage Forms",

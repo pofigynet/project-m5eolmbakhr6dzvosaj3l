@@ -250,7 +250,7 @@ export default function Projects() {
                     </span>
                   </div>
                   <Button variant="outline" size="sm" asChild>
-                    <Link to={`/projects/${project.id}`}>
+                    <Link to={`/projects/${project.id}`}> 
                       View Project
                     </Link>
                   </Button>

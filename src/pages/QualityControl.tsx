@@ -9,7 +9,7 @@ export default function QualityControl() {
       </div>
       
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Quality control features coming soon...</p>
+        <p>Quality control interface coming soon...</p>
       </div>
     </div>
   );

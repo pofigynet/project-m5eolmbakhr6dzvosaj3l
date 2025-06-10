@@ -31,6 +31,11 @@ const queryClient = new QueryClient({
       // Don't throw errors for failed queries, handle them gracefully
       throwOnError: false,
     },
+    mutations: {
+      retry: 1,
+      // Don't throw errors for failed mutations
+      throwOnError: false,
+    },
   },
 });
 

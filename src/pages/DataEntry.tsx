@@ -20,7 +20,7 @@ export default function DataEntry() {
       </div>
       
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Data entry interface coming soon...</p>
+        <p>Data entry interface coming soon...</p>
       </div>
     </div>
   );

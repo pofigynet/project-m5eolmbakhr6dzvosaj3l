@@ -9,7 +9,7 @@ export default function Assistant() {
       </div>
       
       <div className="text-center py-12">
-        <p className="text-muted-foreground">AI assistant features coming soon...</p>
+        <p>AI assistant coming soon...</p>
       </div>
     </div>
   );

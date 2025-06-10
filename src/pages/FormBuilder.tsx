@@ -17,12 +17,12 @@ export default function FormBuilder() {
           </Link>
         </Button>
         <h2 className="text-3xl font-bold tracking-tight">
-          {formId ? 'Edit Form' : 'Create New Form'}
+          {formId ? 'Edit Form' : 'Create Form'}
         </h2>
       </div>
       
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Form builder coming soon...</p>
+        <p>Form builder coming soon...</p>
       </div>
     </div>
   );

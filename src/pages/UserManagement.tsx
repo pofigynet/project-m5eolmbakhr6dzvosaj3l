@@ -9,7 +9,7 @@ export default function UserManagement() {
       </div>
       
       <div className="text-center py-12">
-        <p className="text-muted-foreground">User management features coming soon...</p>
+        <p>User management interface coming soon...</p>
       </div>
     </div>
   );

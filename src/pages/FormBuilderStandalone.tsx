@@ -9,7 +9,7 @@ export default function FormBuilderStandalone() {
       </div>
       
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Standalone form builder coming soon...</p>
+        <p>Standalone form builder coming soon...</p>
       </div>
     </div>
   );

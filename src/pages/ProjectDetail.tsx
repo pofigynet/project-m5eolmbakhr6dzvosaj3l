@@ -17,8 +17,6 @@ import {
 import { Project, Form, Record, User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -80,15 +78,15 @@ export default function ProjectDetail() {
     const pidRecords = records.filter(record => record.record_id === pid);
     const formCompleteness = forms.map(form => {
       const formRecord = pidRecords.find(record => record.form_id === form.id);
-      let status = 'not_started'; // gray
+      let status = 'not_started';
       
       if (formRecord) {
         if (formRecord.validation_status === 'valid') {
-          status = 'complete'; // green
+          status = 'complete';
         } else if (formRecord.validation_status === 'invalid') {
-          status = 'incomplete'; // red
+          status = 'incomplete';
         } else {
-          status = 'unverified'; // yellow
+          status = 'unverified';
         }
       }
       
@@ -304,11 +302,11 @@ export default function ProjectDetail() {
                   {/* Subject Rows */}
                   <div className="space-y-2">
                     {subjectsData.map((subject) => (
-                      <div key={subject.pid} className="grid grid-cols-12 gap-2 p-4 border rounded-lg hover:bg-muted/20">
-                        <div className="col-span-2">
+                      <div key={subject.pid} className="grid grid-cols-12 gap-2 p-4 border rounded-lg hover:bg-muted/20 transition-colors">
+                        <div className="col-span-2 flex items-center">
                           <Link 
                             to={`/projects/${id}/subjects/${subject.pid}`}
-                            className="font-medium text-primary hover:underline cursor-pointer"
+                            className="font-semibold text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer block w-full"
                           >
                             {subject.pid}
                           </Link>
@@ -317,7 +315,7 @@ export default function ProjectDetail() {
                           {subject.forms.slice(0, 10).map((form) => (
                             <div key={form.formId} className="flex justify-center">
                               <div 
-                                className={`w-4 h-4 rounded-full ${getStatusColor2(form.status)} cursor-pointer`}
+                                className={`w-4 h-4 rounded-full ${getStatusColor2(form.status)} cursor-pointer hover:scale-110 transition-transform`}
                                 title={`${form.formName}: ${getStatusLabel(form.status)}`}
                               />
                             </div>
@@ -336,7 +334,7 @@ export default function ProjectDetail() {
                   </p>
                   <div className="flex items-center justify-center space-x-2 mt-4">
                     <Button asChild>
-                      <Link to="/form-builder">
+                      <Link to={`/projects/${id}/forms/new`}>
                         <Plus className="mr-2 h-4 w-4" />
                         Create Forms
                       </Link>
@@ -365,7 +363,7 @@ export default function ProjectDetail() {
                   </CardDescription>
                 </div>
                 <Button asChild>
-                  <Link to="/form-builder">
+                  <Link to={`/projects/${id}/forms/new`}>
                     <Plus className="mr-2 h-4 w-4" />
                     Create Form
                   </Link>
@@ -386,7 +384,7 @@ export default function ProjectDetail() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link to={`/form-builder?edit=${form.id}&project=${id}`}>
+                        <Link to={`/projects/${id}/forms/${form.id}/edit`}>
                           Edit
                         </Link>
                       </Button>
@@ -404,7 +402,7 @@ export default function ProjectDetail() {
                       Create your first data collection form to get started.
                     </p>
                     <Button className="mt-4" asChild>
-                      <Link to="/form-builder">
+                      <Link to={`/projects/${id}/forms/new`}>
                         <Plus className="mr-2 h-4 w-4" />
                         Create Form
                       </Link>
@@ -416,6 +414,7 @@ export default function ProjectDetail() {
           </Card>
         </TabsContent>
 
+        {/* ... keep existing code (data and settings tabs) */}
         <TabsContent value="data" className="space-y-4">
           <Card>
             <CardHeader>

@@ -59,7 +59,7 @@ const fieldTypes = [
 ];
 
 export default function FormBuilder() {
-  const { id: projectId, formId } = useParams<{ id: string; formId?: string }>();
+  const { projectId, formId } = useParams<{ projectId: string; formId?: string }>();
   const navigate = useNavigate();
   const isEditing = !!formId;
 
@@ -285,7 +285,7 @@ export default function FormBuilder() {
           <CardHeader>
             <CardTitle>Field Types</CardTitle>
             <CardDescription>
-              Drag or click to add fields to your form
+              Click to add fields to your form
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -335,6 +335,7 @@ export default function FormBuilder() {
                         moveField(field.id, 'up');
                       }}
                       disabled={index === 0}
+                      className="h-6 w-6 p-0"
                     >
                       ↑
                     </Button>
@@ -346,6 +347,7 @@ export default function FormBuilder() {
                         moveField(field.id, 'down');
                       }}
                       disabled={index === fields.length - 1}
+                      className="h-6 w-6 p-0"
                     >
                       ↓
                     </Button>
@@ -356,8 +358,9 @@ export default function FormBuilder() {
                         e.stopPropagation();
                         removeField(field.id);
                       }}
+                      className="h-6 w-6 p-0"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -469,85 +472,6 @@ export default function FormBuilder() {
                   />
                   <Label>Required field</Label>
                 </div>
-
-                {selectedField.type === 'number' && (
-                  <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-2">
-                        <Label>Min Value</Label>
-                        <Input
-                          type="number"
-                          value={selectedField.validation?.min || ''}
-                          onChange={(e) => updateField(selectedField.id, {
-                            validation: { 
-                              ...selectedField.validation, 
-                              min: e.target.value ? parseInt(e.target.value) : undefined 
-                            }
-                          })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Max Value</Label>
-                        <Input
-                          type="number"
-                          value={selectedField.validation?.max || ''}
-                          onChange={(e) => updateField(selectedField.id, {
-                            validation: { 
-                              ...selectedField.validation, 
-                              max: e.target.value ? parseInt(e.target.value) : undefined 
-                            }
-                          })}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {selectedField.type === 'text' && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Validation Pattern (Regex)</Label>
-                      <Input
-                        value={selectedField.validation?.pattern || ''}
-                        onChange={(e) => updateField(selectedField.id, {
-                          validation: { 
-                            ...selectedField.validation, 
-                            pattern: e.target.value 
-                          }
-                        })}
-                        placeholder="^[A-Z]{2}[0-9]{4}$"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-2">
-                        <Label>Min Length</Label>
-                        <Input
-                          type="number"
-                          value={selectedField.validation?.minLength || ''}
-                          onChange={(e) => updateField(selectedField.id, {
-                            validation: { 
-                              ...selectedField.validation, 
-                              minLength: e.target.value ? parseInt(e.target.value) : undefined 
-                            }
-                          })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Max Length</Label>
-                        <Input
-                          type="number"
-                          value={selectedField.validation?.maxLength || ''}
-                          onChange={(e) => updateField(selectedField.id, {
-                            validation: { 
-                              ...selectedField.validation, 
-                              maxLength: e.target.value ? parseInt(e.target.value) : undefined 
-                            }
-                          })}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
               </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">

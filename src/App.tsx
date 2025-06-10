@@ -12,6 +12,7 @@ import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import SubjectDashboard from "./pages/SubjectDashboard";
 import StandaloneFormBuilder from "./pages/StandaloneFormBuilder";
+import FormBuilder from "./pages/FormBuilder";
 import Forms from "./pages/Forms";
 import DataEntry from "./pages/DataEntry";
 import QualityControl from "./pages/QualityControl";
@@ -45,6 +46,8 @@ const App = () => (
                 <Route path="/projects/:id" element={<ProjectDetail />} />
                 <Route path="/projects/:projectId/subjects/:subjectId" element={<SubjectDashboard />} />
                 <Route path="/projects/:id/data-entry" element={<DataEntry />} />
+                <Route path="/projects/:projectId/forms/:formId/edit" element={<FormBuilder />} />
+                <Route path="/projects/:projectId/forms/new" element={<FormBuilder />} />
                 <Route path="/forms" element={<Forms />} />
                 <Route path="/form-builder" element={<StandaloneFormBuilder />} />
                 <Route path="/quality-control" element={<QualityControl />} />

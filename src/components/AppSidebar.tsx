@@ -1,50 +1,48 @@
-import { Home, FolderOpen, BarChart3, Users, Settings, Bot, FileText, Shield } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
 } from "@/components/ui/sidebar";
+import { 
+  Home, 
+  FolderOpen, 
+  FileText, 
+  BarChart3, 
+  Users, 
+  MessageCircle,
+  Database,
+  Settings,
+  Shield
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
-const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Home,
-  },
+const navigationItems = [
   {
     title: "Dashboard",
     url: "/dashboard",
-    icon: BarChart3,
+    icon: Home,
   },
   {
     title: "Projects",
     url: "/projects",
     icon: FolderOpen,
   },
-];
-
-const toolsItems = [
-  {
-    title: "Form Builder",
-    url: "/form-builder",
-    icon: FileText,
-  },
   {
     title: "Quality Control",
     url: "/quality-control",
-    icon: Shield,
+    icon: BarChart3,
   },
   {
-    title: "AI Assistant",
-    url: "/assistant",
-    icon: Bot,
+    title: "Data Export",
+    url: "/export",
+    icon: Database,
   },
 ];
 
@@ -54,6 +52,19 @@ const adminItems = [
     url: "/users",
     icon: Users,
   },
+  {
+    title: "System Settings",
+    url: "/settings",
+    icon: Settings,
+  },
+];
+
+const supportItems = [
+  {
+    title: "Research Assistant",
+    url: "/assistant",
+    icon: MessageCircle,
+  },
 ];
 
 export function AppSidebar() {
@@ -61,43 +72,29 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-6 py-4">
-        <h2 className="text-lg font-semibold">REDCap Clone</h2>
+      <SidebarHeader className="border-b border-sidebar-border">
+        <div className="flex items-center gap-2 px-4 py-2">
+          <Shield className="h-6 w-6 text-primary" />
+          <div>
+            <h1 className="font-semibold text-lg">REDCap Lite</h1>
+            <p className="text-xs text-muted-foreground">Clinical Research Platform</p>
+          </div>
+        </div>
       </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
-                    asChild 
+                    asChild
                     isActive={location.pathname === item.url}
                   >
                     <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {toolsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
+                      <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -114,11 +111,32 @@ export function AppSidebar() {
               {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
-                    asChild 
+                    asChild
                     isActive={location.pathname === item.url}
                   >
                     <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Support</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {supportItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild
+                    isActive={location.pathname === item.url}
+                  >
+                    <Link to={item.url}>
+                      <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -128,6 +146,15 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border">
+        <div className="p-4">
+          <div className="text-xs text-muted-foreground">
+            <p>Version 1.0.0</p>
+            <p>© 2024 REDCap Lite</p>
+          </div>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

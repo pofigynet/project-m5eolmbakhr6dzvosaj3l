@@ -18,8 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Project } from "@/entities";
-import { useToast } from "@/hooks/use-toast";
+import { Project, User } from "@/entities";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -34,10 +35,14 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
     principal_investigator: "",
     institution: "",
     irb_number: "",
-    status: "development" as const,
+    status: "development",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => User.me(),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,14 +51,16 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
     try {
       await Project.create({
         ...formData,
-        settings: {},
+        owner_id: currentUser?.id || "",
+        settings: {
+          data_validation: true,
+          audit_logging: true,
+          user_access_control: true,
+        },
       });
 
-      toast({
-        title: "Project created",
-        description: "Your new project has been created successfully.",
-      });
-
+      toast.success("Project created successfully!");
+      onSuccess();
       setFormData({
         project_name: "",
         description: "",
@@ -62,14 +69,9 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
         irb_number: "",
         status: "development",
       });
-
-      onSuccess();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create project. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to create project. Please try again.");
+      console.error("Error creating project:", error);
     } finally {
       setIsLoading(false);
     }
@@ -77,67 +79,80 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
-            Create a new research project to organize your forms and data collection.
+            Set up a new research project for data collection and management.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="project_name">Project Name</Label>
-              <Input
-                id="project_name"
-                value={formData.project_name}
-                onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
-                placeholder="Enter project name"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe your research project"
-                rows={3}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="principal_investigator">Principal Investigator</Label>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="project_name">Project Name *</Label>
+            <Input
+              id="project_name"
+              value={formData.project_name}
+              onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
+              placeholder="Enter project name"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe the research objectives and methodology"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="principal_investigator">Principal Investigator *</Label>
               <Input
                 id="principal_investigator"
                 value={formData.principal_investigator}
                 onChange={(e) => setFormData({ ...formData, principal_investigator: e.target.value })}
-                placeholder="Enter PI name"
+                placeholder="Dr. Jane Smith"
+                required
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="institution">Institution</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="institution">Institution *</Label>
               <Input
                 id="institution"
                 value={formData.institution}
                 onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
-                placeholder="Enter institution name"
+                placeholder="University Hospital"
+                required
               />
             </div>
-            <div className="grid gap-2">
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="irb_number">IRB Number</Label>
               <Input
                 id="irb_number"
                 value={formData.irb_number}
                 onChange={(e) => setFormData({ ...formData, irb_number: e.target.value })}
-                placeholder="Enter IRB approval number"
+                placeholder="IRB-2024-001"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Initial Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select project status" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="development">Development</SelectItem>
@@ -148,6 +163,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
               </Select>
             </div>
           </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

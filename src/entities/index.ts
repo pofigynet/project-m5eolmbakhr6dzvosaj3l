@@ -1,7 +1,7 @@
-import superdevClient from '@/lib/superdev/client';
+import { superdevClient } from "@/lib/superdev/client";
 
-export const Project = superdevClient.entities.Project;
-export const Form = superdevClient.entities.Form;
-export const Record = superdevClient.entities.Record;
-export const AuditLog = superdevClient.entities.AuditLog;
-export const User = superdevClient.entities.User;
+export const AuditLog = superdevClient.entity("AuditLog");
+export const Form = superdevClient.entity("Form");
+export const Project = superdevClient.entity("Project");
+export const Record = superdevClient.entity("Record");
+export const User = superdevClient.auth;

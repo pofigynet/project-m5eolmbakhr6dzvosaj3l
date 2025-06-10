@@ -1,4 +1,3 @@
-import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -9,23 +8,30 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-import {
-  Home,
-  FolderOpen,
-  FileText,
-  BarChart3,
-  Users,
+import { 
+  Home, 
+  FolderOpen, 
+  BarChart3, 
+  Users, 
+  Shield, 
   MessageCircle,
-  Shield,
   Settings,
+  Database
 } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
+    title: "Home",
+    url: "/",
+    icon: Home,
+  },
+  {
     title: "Dashboard",
     url: "/dashboard",
-    icon: Home,
+    icon: BarChart3,
   },
   {
     title: "Projects",
@@ -35,15 +41,15 @@ const menuItems = [
   {
     title: "Form Builder",
     url: "/form-builder",
-    icon: FileText,
+    icon: Database,
   },
   {
     title: "Quality Control",
     url: "/quality-control",
-    icon: BarChart3,
+    icon: Shield,
   },
   {
-    title: "User Management",
+    title: "Users",
     url: "/users",
     icon: Users,
   },
@@ -59,12 +65,11 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center space-x-2 px-4 py-2">
-          <Shield className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">REDCap Lite</span>
-        </div>
+      <SidebarHeader className="p-4">
+        <h2 className="text-lg font-semibold">REDCap Clone</h2>
+        <p className="text-sm text-muted-foreground">Research Data Management</p>
       </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -87,6 +92,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
+      <SidebarFooter className="p-4">
+        <div className="text-xs text-muted-foreground">
+          Secure Research Platform
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

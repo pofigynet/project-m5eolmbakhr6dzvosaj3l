@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Plus, FolderOpen, FileText, Users, AlertTriangle, CheckCircle, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Project, Record, Form, User } from "@/entities";
+import { Project } from "@/entities/Project";
+import { Record } from "@/entities/Record";
+import { Form } from "@/entities/Form";
+import { User } from "@/entities/User";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {

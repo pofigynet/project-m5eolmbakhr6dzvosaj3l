@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
+import SubjectDashboard from "./pages/SubjectDashboard";
 import StandaloneFormBuilder from "./pages/StandaloneFormBuilder";
 import Forms from "./pages/Forms";
 import DataEntry from "./pages/DataEntry";
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/projects/:id" element={<ProjectDetail />} />
+                <Route path="/projects/:projectId/subjects/:subjectId" element={<SubjectDashboard />} />
                 <Route path="/projects/:id/data-entry" element={<DataEntry />} />
                 <Route path="/forms" element={<Forms />} />
                 <Route path="/form-builder" element={<StandaloneFormBuilder />} />

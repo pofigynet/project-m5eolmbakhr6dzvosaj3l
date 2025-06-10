@@ -263,7 +263,7 @@ export default function ProjectDetail() {
             <CardHeader>
               <CardTitle>Subjects Dashboard</CardTitle>
               <CardDescription>
-                Form completion status for each participant (PID)
+                Form completion status for each participant (PID). Click on a subject ID to view detailed dashboard.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -305,7 +305,14 @@ export default function ProjectDetail() {
                   <div className="space-y-2">
                     {subjectsData.map((subject) => (
                       <div key={subject.pid} className="grid grid-cols-12 gap-2 p-4 border rounded-lg hover:bg-muted/20">
-                        <div className="col-span-2 font-medium">{subject.pid}</div>
+                        <div className="col-span-2">
+                          <Link 
+                            to={`/projects/${id}/subjects/${subject.pid}`}
+                            className="font-medium text-primary hover:underline cursor-pointer"
+                          >
+                            {subject.pid}
+                          </Link>
+                        </div>
                         <div className="col-span-10 grid grid-cols-10 gap-2">
                           {subject.forms.slice(0, 10).map((form) => (
                             <div key={form.formId} className="flex justify-center">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,15 +61,16 @@ const fieldTypes = [
 export default function StandaloneFormBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const formId = searchParams.get('edit');
-  const isEditing = !!formId;
+  const editFormId = searchParams.get('edit');
+  const projectId = searchParams.get('project');
+  const isEditing = !!editFormId;
 
   const [formData, setFormData] = useState({
     form_name: "",
     description: "",
-    project_id: "",
     is_active: true,
     order_index: 1,
+    project_id: projectId || "",
   });
 
   const [fields, setFields] = useState<FormField[]>([]);
@@ -82,9 +83,9 @@ export default function StandaloneFormBuilder() {
   });
 
   const { data: existingForm } = useQuery({
-    queryKey: ['form', formId],
-    queryFn: () => Form.get(formId!),
-    enabled: !!formId && isEditing,
+    queryKey: ['form', editFormId],
+    queryFn: () => Form.get(editFormId!),
+    enabled: !!editFormId && isEditing,
   });
 
   useEffect(() => {
@@ -92,9 +93,9 @@ export default function StandaloneFormBuilder() {
       setFormData({
         form_name: existingForm.form_name,
         description: existingForm.description,
-        project_id: existingForm.project_id,
         is_active: existingForm.is_active,
         order_index: existingForm.order_index,
+        project_id: existingForm.project_id,
       });
       
       if (existingForm.schema?.fields) {
@@ -181,14 +182,18 @@ export default function StandaloneFormBuilder() {
       };
 
       if (isEditing) {
-        await Form.update(formId!, formPayload);
+        await Form.update(editFormId!, formPayload);
         toast.success("Form updated successfully!");
       } else {
         await Form.create(formPayload);
         toast.success("Form created successfully!");
       }
 
-      navigate("/forms");
+      if (formData.project_id) {
+        navigate(`/projects/${formData.project_id}`);
+      } else {
+        navigate('/forms');
+      }
     } catch (error) {
       toast.error("Failed to save form. Please try again.");
       console.error("Error saving form:", error);
@@ -204,9 +209,9 @@ export default function StandaloneFormBuilder() {
         <div className="flex items-center space-x-2">
           <SidebarTrigger />
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/forms">
+            <Link to={formData.project_id ? `/projects/${formData.project_id}` : "/forms"}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Forms
+              Back
             </Link>
           </Button>
         </div>
@@ -229,7 +234,7 @@ export default function StandaloneFormBuilder() {
             {isEditing ? "Edit Form" : "Create New Form"}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Build custom data collection forms for your research projects
+            Build data collection forms for your research projects
           </p>
         </div>
 
@@ -253,7 +258,10 @@ export default function StandaloneFormBuilder() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="project_id">Project *</Label>
-                <Select value={formData.project_id} onValueChange={(value) => setFormData({ ...formData, project_id: value })}>
+                <Select 
+                  value={formData.project_id} 
+                  onValueChange={(value) => setFormData({ ...formData, project_id: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
@@ -269,41 +277,39 @@ export default function StandaloneFormBuilder() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe what this form is used for"
-                  rows={3}
+                <Label htmlFor="order_index">Display Order</Label>
+                <Input
+                  id="order_index"
+                  type="number"
+                  value={formData.order_index}
+                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 1 })}
+                  min="1"
                 />
               </div>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="order_index">Display Order</Label>
-                  <Input
-                    id="order_index"
-                    type="number"
-                    value={formData.order_index}
-                    onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 1 })}
-                    min="1"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                  />
-                  <Label htmlFor="is_active">Form is active</Label>
-                </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+                <Label htmlFor="is_active">Form is active</Label>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe what this form is used for"
+                rows={3}
+              />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Form Builder - keeping the same structure as the original FormBuilder */}
+      {/* Form Builder */}
       <div className="grid gap-4 md:grid-cols-3">
         {/* Field Types */}
         <Card>
@@ -328,7 +334,7 @@ export default function StandaloneFormBuilder() {
           </CardContent>
         </Card>
 
-        {/* Form Preview - keeping existing preview logic */}
+        {/* Form Preview */}
         <Card>
           <CardHeader>
             <CardTitle>Form Preview</CardTitle>
@@ -433,7 +439,7 @@ export default function StandaloneFormBuilder() {
           </CardContent>
         </Card>
 
-        {/* Field Properties - keeping existing properties panel */}
+        {/* Field Properties */}
         <Card>
           <CardHeader>
             <CardTitle>Field Properties</CardTitle>
@@ -494,6 +500,8 @@ export default function StandaloneFormBuilder() {
                   />
                   <Label>Required field</Label>
                 </div>
+
+                {/* ... keep existing code for validation rules */}
               </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">

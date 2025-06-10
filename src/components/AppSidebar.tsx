@@ -1,26 +1,25 @@
+import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
-import { 
-  Home, 
-  FolderOpen, 
-  FileText, 
-  Users, 
-  BarChart3, 
+import {
+  Home,
+  FolderOpen,
+  FileText,
+  BarChart3,
+  Users,
   MessageCircle,
+  Shield,
   Settings,
-  Plus
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
@@ -49,7 +48,7 @@ const menuItems = [
     icon: Users,
   },
   {
-    title: "Research Assistant",
+    title: "Assistant",
     url: "/assistant",
     icon: MessageCircle,
   },
@@ -60,18 +59,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">ResearchHub</h2>
-            <p className="text-xs text-muted-foreground">Data Management</p>
-          </div>
+      <SidebarHeader>
+        <div className="flex items-center space-x-2 px-4 py-2">
+          <Shield className="h-6 w-6 text-primary" />
+          <span className="font-bold text-lg">REDCap Lite</span>
         </div>
       </SidebarHeader>
-      
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -94,12 +87,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
-      <SidebarFooter className="p-4">
-        <div className="text-xs text-muted-foreground">
-          Research Data Management Platform v1.0
-        </div>
-      </SidebarFooter>
     </Sidebar>
   );
 }

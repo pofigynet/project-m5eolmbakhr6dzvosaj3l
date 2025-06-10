@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Plus, FolderOpen, FileText, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Project } from "@/entities/Project";
+import { Project } from "@/entities";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

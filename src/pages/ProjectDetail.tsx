@@ -17,10 +17,7 @@ import {
   Edit,
   CheckCircle
 } from "lucide-react";
-import { Project } from "@/entities/Project";
-import { Form } from "@/entities/Form";
-import { Record } from "@/entities/Record";
-import { User } from "@/entities/User";
+import { Project, Form, Record, User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";

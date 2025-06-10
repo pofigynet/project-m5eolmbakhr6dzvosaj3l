@@ -1,86 +1,51 @@
+import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { 
-  Home, 
-  FolderOpen, 
-  FileText, 
-  BarChart3, 
-  Users, 
-  MessageCircle,
+import {
+  Home,
   Database,
+  FileText,
+  BarChart3,
+  Users,
   Settings,
+  HelpCircle,
+  Activity,
   Shield,
-  Edit
+  Bot
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
 
 const navigationItems = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
+    title: "Overview",
+    items: [
+      { title: "Dashboard", url: "/dashboard", icon: Home },
+      { title: "Projects", url: "/projects", icon: Database },
+    ],
   },
   {
-    title: "Projects",
-    url: "/projects",
-    icon: FolderOpen,
-  },
-];
-
-const formItems = [
-  {
-    title: "Form Builder",
-    url: "/form-builder",
-    icon: FileText,
+    title: "Data Collection",
+    items: [
+      { title: "Form Builder", url: "/form-builder", icon: FileText },
+      { title: "Forms", url: "/forms", icon: FileText },
+      { title: "Quality Control", url: "/quality-control", icon: Activity },
+    ],
   },
   {
-    title: "Manage Forms",
-    url: "/forms",
-    icon: Edit,
-  },
-];
-
-const dataItems = [
-  {
-    title: "Quality Control",
-    url: "/quality-control",
-    icon: BarChart3,
-  },
-  {
-    title: "Data Export",
-    url: "/export",
-    icon: Database,
-  },
-];
-
-const adminItems = [
-  {
-    title: "User Management",
-    url: "/users",
-    icon: Users,
-  },
-  {
-    title: "System Settings",
-    url: "/settings",
-    icon: Settings,
-  },
-];
-
-const supportItems = [
-  {
-    title: "Research Assistant",
-    url: "/assistant",
-    icon: MessageCircle,
+    title: "Management",
+    items: [
+      { title: "User Management", url: "/users", icon: Users },
+      { title: "Assistant", url: "/assistant", icon: Bot },
+    ],
   },
 ];
 
@@ -89,129 +54,47 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-4 py-2">
-          <Shield className="h-6 w-6 text-primary" />
+      <SidebarHeader className="border-b px-6 py-4">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <Database className="w-4 h-4 text-primary-foreground" />
+          </div>
           <div>
-            <h1 className="font-semibold text-lg">REDCap Lite</h1>
-            <p className="text-xs text-muted-foreground">Clinical Research Platform</p>
+            <h2 className="text-lg font-semibold">Research Data</h2>
+            <p className="text-xs text-muted-foreground">Management Platform</p>
           </div>
         </div>
       </SidebarHeader>
       
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Forms</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {formItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Data Management</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {dataItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Support</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {supportItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {navigationItems.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={location.pathname === item.url}
+                    >
+                      <Link to={item.url}>
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
-
-      <SidebarFooter className="border-t border-sidebar-border">
-        <div className="p-4">
-          <div className="text-xs text-muted-foreground">
-            <p>Version 1.0.0</p>
-            <p>© 2024 REDCap Lite</p>
-          </div>
+      
+      <SidebarFooter className="border-t p-4">
+        <div className="text-xs text-muted-foreground">
+          <p>Research Data Management</p>
+          <p>Version 1.0.0</p>
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -32,6 +32,33 @@
       "type": "string",
       "description": "User ID of the project owner"
     },
+    "number_of_visits": {
+      "type": "number",
+      "description": "Total number of visits in the study",
+      "default": 1
+    },
+    "visit_types": {
+      "type": "array",
+      "description": "List of visit types with their order",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the visit type"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the visit"
+          },
+          "order": {
+            "type": "number",
+            "description": "Order of the visit in the sequence"
+          }
+        }
+      },
+      "default": []
+    },
     "settings": {
       "type": "object",
       "description": "Project configuration settings"

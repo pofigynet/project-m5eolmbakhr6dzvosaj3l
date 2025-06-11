@@ -14,7 +14,8 @@ import {
   Users,
   Building,
   Shield,
-  Calendar
+  Calendar,
+  Trash2
 } from "lucide-react";
 import { Project, User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
@@ -35,6 +36,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface VisitType {
+  id: string;
+  name: string;
+  order: number;
+}
+
 export default function Projects() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -45,7 +52,11 @@ export default function Projects() {
     institution: "",
     irb_number: "",
     status: "development" as const,
+    number_of_visits: 1,
   });
+  const [visitTypes, setVisitTypes] = useState<VisitType[]>([
+    { id: "baseline", name: "Baseline", order: 1 }
+  ]);
 
   const { data: projects = [], refetch } = useQuery({
     queryKey: ['projects'],
@@ -63,9 +74,61 @@ export default function Projects() {
     project.institution.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleNumberOfVisitsChange = (value: number) => {
+    setNewProject({ ...newProject, number_of_visits: value });
+    
+    // Auto-generate visit types based on number of visits
+    const newVisitTypes: VisitType[] = [];
+    for (let i = 1; i <= value; i++) {
+      if (i === 1) {
+        newVisitTypes.push({ id: "baseline", name: "Baseline", order: 1 });
+      } else {
+        const monthNumber = i - 1;
+        newVisitTypes.push({ 
+          id: `month_${monthNumber}`, 
+          name: `${monthNumber}M`, 
+          order: i 
+        });
+      }
+    }
+    setVisitTypes(newVisitTypes);
+  };
+
+  const updateVisitType = (index: number, name: string) => {
+    const updated = [...visitTypes];
+    updated[index] = { ...updated[index], name, id: name.toLowerCase().replace(/\s+/g, '_') };
+    setVisitTypes(updated);
+  };
+
+  const removeVisitType = (index: number) => {
+    if (visitTypes.length > 1) {
+      const updated = visitTypes.filter((_, i) => i !== index);
+      // Reorder the remaining visits
+      const reordered = updated.map((visit, i) => ({ ...visit, order: i + 1 }));
+      setVisitTypes(reordered);
+      setNewProject({ ...newProject, number_of_visits: reordered.length });
+    }
+  };
+
+  const addVisitType = () => {
+    const newOrder = visitTypes.length + 1;
+    const newVisit: VisitType = {
+      id: `visit_${newOrder}`,
+      name: `Visit ${newOrder}`,
+      order: newOrder
+    };
+    setVisitTypes([...visitTypes, newVisit]);
+    setNewProject({ ...newProject, number_of_visits: newOrder });
+  };
+
   const handleCreateProject = async () => {
     if (!newProject.project_name.trim()) {
       toast.error("Project name is required");
+      return;
+    }
+
+    if (visitTypes.length === 0) {
+      toast.error("At least one visit type is required");
       return;
     }
 
@@ -73,6 +136,7 @@ export default function Projects() {
       await Project.create({
         ...newProject,
         owner_id: currentUser?.id || '',
+        visit_types: visitTypes,
         settings: {
           data_validation: true,
           audit_logging: true,
@@ -90,7 +154,9 @@ export default function Projects() {
         institution: "",
         irb_number: "",
         status: "development",
+        number_of_visits: 1,
       });
+      setVisitTypes([{ id: "baseline", name: "Baseline", order: 1 }]);
       refetch();
     } catch (error) {
       toast.error("Failed to create project");
@@ -133,81 +199,135 @@ export default function Projects() {
               New Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Project</DialogTitle>
               <DialogDescription>
-                Set up a new research project for data collection
+                Set up a new research project with visit schedule and data collection
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* Basic Project Info */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Project Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="project_name">Project Name *</Label>
+                    <Input
+                      id="project_name"
+                      value={newProject.project_name}
+                      onChange={(e) => setNewProject({ ...newProject, project_name: e.target.value })}
+                      placeholder="Enter project name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select 
+                      value={newProject.status} 
+                      onValueChange={(value: any) => setNewProject({ ...newProject, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="development">Development</SelectItem>
+                        <SelectItem value="production">Production</SelectItem>
+                        <SelectItem value="analysis">Analysis</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="project_name">Project Name *</Label>
-                  <Input
-                    id="project_name"
-                    value={newProject.project_name}
-                    onChange={(e) => setNewProject({ ...newProject, project_name: e.target.value })}
-                    placeholder="Enter project name"
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newProject.description}
+                    onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                    placeholder="Describe your research project"
+                    rows={3}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select 
-                    value={newProject.status} 
-                    onValueChange={(value: any) => setNewProject({ ...newProject, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="development">Development</SelectItem>
-                      <SelectItem value="production">Production</SelectItem>
-                      <SelectItem value="analysis">Analysis</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newProject.description}
-                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                  placeholder="Describe your research project"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="principal_investigator">Principal Investigator</Label>
-                  <Input
-                    id="principal_investigator"
-                    value={newProject.principal_investigator}
-                    onChange={(e) => setNewProject({ ...newProject, principal_investigator: e.target.value })}
-                    placeholder="PI name"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="principal_investigator">Principal Investigator</Label>
+                    <Input
+                      id="principal_investigator"
+                      value={newProject.principal_investigator}
+                      onChange={(e) => setNewProject({ ...newProject, principal_investigator: e.target.value })}
+                      placeholder="PI name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="institution">Institution</Label>
+                    <Input
+                      id="institution"
+                      value={newProject.institution}
+                      onChange={(e) => setNewProject({ ...newProject, institution: e.target.value })}
+                      placeholder="Institution name"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="institution">Institution</Label>
+                  <Label htmlFor="irb_number">IRB Number (Optional)</Label>
                   <Input
-                    id="institution"
-                    value={newProject.institution}
-                    onChange={(e) => setNewProject({ ...newProject, institution: e.target.value })}
-                    placeholder="Institution name"
+                    id="irb_number"
+                    value={newProject.irb_number}
+                    onChange={(e) => setNewProject({ ...newProject, irb_number: e.target.value })}
+                    placeholder="IRB approval number"
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="irb_number">IRB Number (Optional)</Label>
-                <Input
-                  id="irb_number"
-                  value={newProject.irb_number}
-                  onChange={(e) => setNewProject({ ...newProject, irb_number: e.target.value })}
-                  placeholder="IRB approval number"
-                />
+
+              {/* Visit Schedule */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Visit Schedule</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="number_of_visits">Number of Visits</Label>
+                  <Input
+                    id="number_of_visits"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={newProject.number_of_visits}
+                    onChange={(e) => handleNumberOfVisitsChange(parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Visit Types</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addVisitType}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Visit
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {visitTypes.map((visit, index) => (
+                      <div key={visit.id} className="flex items-center space-x-2">
+                        <span className="text-sm text-muted-foreground w-8">{visit.order}.</span>
+                        <Input
+                          value={visit.name}
+                          onChange={(e) => updateVisitType(index, e.target.value)}
+                          placeholder="Visit name"
+                          className="flex-1"
+                        />
+                        {visitTypes.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeVisitType(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsCreating(false)}>
                   Cancel
@@ -269,7 +389,7 @@ export default function Projects() {
                 )}
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Created {new Date(project.created_at).toLocaleDateString()}</span>
+                  <span>{project.number_of_visits || 1} visits</span>
                 </div>
                 <div className="pt-2">
                   <Button className="w-full" asChild>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +17,15 @@ import {
   Plus,
   Trash2,
   Calendar,
-  Edit
+  Edit,
+  AlertTriangle
 } from "lucide-react";
 import { Project, Form, Record, User, FormVisitAssignment } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useUserRole } from "@/hooks/useUserRole";
+import { SafeDeleteDialog } from "@/components/SafeDeleteDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,8 +49,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { permissions, isAdmin } = useUserRole();
+  
   const [selectedVisit, setSelectedVisit] = useState<string>("");
   const [isEditingVisit, setIsEditingVisit] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: project, refetch: refetchProject } = useQuery({
     queryKey: ['project', id],
@@ -180,6 +188,11 @@ export default function ProjectDetail() {
   };
 
   const handleDeleteSubject = async (pid: string) => {
+    if (!isAdmin) {
+      toast.error("Only administrators can delete subjects");
+      return;
+    }
+
     try {
       // Delete all records for this subject
       const subjectRecords = records.filter(record => record.record_id === pid);
@@ -195,7 +208,49 @@ export default function ProjectDetail() {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!isAdmin) {
+      toast.error("Only administrators can delete projects");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Delete all records first
+      for (const record of records) {
+        await Record.delete(record.id);
+      }
+      
+      // Delete all forms
+      for (const form of forms) {
+        await Form.delete(form.id);
+      }
+      
+      // Delete all form visit assignments
+      for (const assignment of formVisitAssignments) {
+        await FormVisitAssignment.delete(assignment.id);
+      }
+      
+      // Finally delete the project
+      await Project.delete(id!);
+      
+      toast.success("Project deleted successfully");
+      navigate("/projects");
+    } catch (error) {
+      toast.error("Failed to delete project");
+      console.error("Error deleting project:", error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   const handleAssignFormToVisit = async (formId: string, visitId: string, isAssigned: boolean) => {
+    if (!permissions.canEdit) {
+      toast.error("You don't have permission to edit form assignments");
+      return;
+    }
+
     try {
       if (isAssigned) {
         // Create assignment
@@ -261,6 +316,14 @@ export default function ProjectDetail() {
               Data Entry
             </Link>
           </Button>
+          {permissions.canEdit && (
+            <Button asChild>
+              <Link to={`/projects/${id}/forms/new`}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Form
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -356,10 +419,12 @@ export default function ProjectDetail() {
       {/* Tabs */}
       <Tabs defaultValue="subjects" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="subjects">Subjects Dashboard</TabsTrigger>
+          <TabsTrigger value="subjects">Subjects</TabsTrigger>
           <TabsTrigger value="forms">Forms</TabsTrigger>
-          <TabsTrigger value="data">Data</TabsTrigger>
-          <TabsTrigger value="project-settings">Project Settings</TabsTrigger>
+          <TabsTrigger value="visit-config">Visit Config</TabsTrigger>
+          {permissions.canAccessSettings && (
+            <TabsTrigger value="project-settings">Project Settings</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="subjects" className="space-y-4">
@@ -417,30 +482,32 @@ export default function ProjectDetail() {
                           </Link>
                         </div>
                         <div className="flex items-center">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                <Trash2 className="h-3 w-3 text-red-500" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Subject {subject.pid}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete all data for subject {subject.pid}. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDeleteSubject(subject.pid)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {isAdmin && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                  <Trash2 className="h-3 w-3 text-red-500" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Subject {subject.pid}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete all data for subject {subject.pid}. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteSubject(subject.pid)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                         {subject.forms.slice(0, 8).map((form) => (
                           <div key={form.formId} className="flex justify-center">
@@ -462,18 +529,22 @@ export default function ProjectDetail() {
                     Create forms and start entering data to see the subjects dashboard.
                   </p>
                   <div className="flex items-center justify-center space-x-2 mt-4">
-                    <Button asChild>
-                      <Link to={`/projects/${id}/forms/new`}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Forms
-                      </Link>
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <Link to={`/projects/${id}/data-entry`}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Enter Data
-                      </Link>
-                    </Button>
+                    {permissions.canEdit && (
+                      <>
+                        <Button asChild>
+                          <Link to={`/projects/${id}/forms/new`}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Forms
+                          </Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                          <Link to={`/projects/${id}/data-entry`}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Enter Data
+                          </Link>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -492,12 +563,14 @@ export default function ProjectDetail() {
                     Data collection forms for this project
                   </CardDescription>
                 </div>
-                <Button asChild>
-                  <Link to={`/projects/${id}/forms/new`}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Form
-                  </Link>
-                </Button>
+                {permissions.canEdit && (
+                  <Button asChild>
+                    <Link to={`/projects/${id}/forms/new`}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Form
+                    </Link>
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -513,11 +586,13 @@ export default function ProjectDetail() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/projects/${id}/forms/${form.id}/edit`}>
-                          Edit
-                        </Link>
-                      </Button>
+                      {permissions.canEdit && (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/projects/${id}/forms/${form.id}/edit`}>
+                            Edit
+                          </Link>
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm">
                         Preview
                       </Button>
@@ -531,12 +606,14 @@ export default function ProjectDetail() {
                     <p className="mt-2 text-muted-foreground">
                       Create your first data collection form to get started.
                     </p>
-                    <Button className="mt-4" asChild>
-                      <Link to={`/projects/${id}/forms/new`}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Form
-                      </Link>
-                    </Button>
+                    {permissions.canEdit && (
+                      <Button className="mt-4" asChild>
+                        <Link to={`/projects/${id}/forms/new`}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Form
+                        </Link>
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -544,136 +621,10 @@ export default function ProjectDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="data" className="space-y-4">
+        <TabsContent value="visit-config" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Data Records</CardTitle>
-              <CardDescription>
-                Recent data entries for this project
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {records.slice(0, 10).map((record) => (
-                  <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <h4 className="font-medium">Record {record.record_id}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Form: {forms.find(f => f.id === record.form_id)?.form_name || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Entered by: {users.find(u => u.id === record.entered_by)?.full_name || 'Unknown'}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={
-                        record.validation_status === 'valid' ? 'default' :
-                        record.validation_status === 'invalid' ? 'destructive' : 'secondary'
-                      }>
-                        {record.validation_status}
-                      </Badge>
-                      <Button variant="outline" size="sm">
-                        View
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {records.length === 0 && (
-                  <div className="text-center py-8">
-                    <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">No data yet</h3>
-                    <p className="mt-2 text-muted-foreground">
-                      Start collecting data by entering records through your forms.
-                    </p>
-                    <Button className="mt-4" asChild>
-                      <Link to={`/projects/${id}/data-entry`}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Enter Data
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="project-settings" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Project Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Information</CardTitle>
-                <CardDescription>
-                  Basic project details and configuration
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Project Name</Label>
-                    <p className="text-sm text-muted-foreground">{project.project_name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Status</Label>
-                    <p className="text-sm text-muted-foreground capitalize">{project.status}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Principal Investigator</Label>
-                    <p className="text-sm text-muted-foreground">{project.principal_investigator}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Institution</Label>
-                    <p className="text-sm text-muted-foreground">{project.institution}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">IRB Number</Label>
-                    <p className="text-sm text-muted-foreground">{project.irb_number || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Number of Visits</Label>
-                    <p className="text-sm text-muted-foreground">{project.number_of_visits || 1}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Visit Types */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Visit Types</CardTitle>
-                <CardDescription>
-                  Configured visit schedule for this project
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {project.visit_types?.map((visit, index) => (
-                    <div key={visit.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium w-8">{visit.order}.</span>
-                        <span className="text-sm">{visit.name}</span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedVisit(visit.id)}
-                      >
-                        Configure
-                      </Button>
-                    </div>
-                  )) || (
-                    <p className="text-sm text-muted-foreground">No visit types configured</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Form-Visit Assignments */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Form Assignments by Visit</CardTitle>
+              <CardTitle>Visit Configuration</CardTitle>
               <CardDescription>
                 Configure which forms are available for each visit type
               </CardDescription>
@@ -685,43 +636,45 @@ export default function ProjectDetail() {
                     <div key={visit.id} className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium">{visit.name}</h4>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit Forms
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Assign Forms to {visit.name}</DialogTitle>
-                              <DialogDescription>
-                                Select which forms should be available for this visit
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              {forms.map((form) => (
-                                <div key={form.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`${visit.id}-${form.id}`}
-                                    checked={isFormAssignedToVisit(form.id, visit.id)}
-                                    onCheckedChange={(checked) => 
-                                      handleAssignFormToVisit(form.id, visit.id, checked as boolean)
-                                    }
-                                  />
-                                  <Label htmlFor={`${visit.id}-${form.id}`} className="text-sm">
-                                    {form.form_name}
-                                  </Label>
-                                </div>
-                              ))}
-                              {forms.length === 0 && (
-                                <p className="text-sm text-muted-foreground">
-                                  No forms available. Create forms first.
-                                </p>
-                              )}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        {permissions.canEdit && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit Forms
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Assign Forms to {visit.name}</DialogTitle>
+                                <DialogDescription>
+                                  Select which forms should be available for this visit
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                {forms.map((form) => (
+                                  <div key={form.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`${visit.id}-${form.id}`}
+                                      checked={isFormAssignedToVisit(form.id, visit.id)}
+                                      onCheckedChange={(checked) => 
+                                        handleAssignFormToVisit(form.id, visit.id, checked as boolean)
+                                      }
+                                    />
+                                    <Label htmlFor={`${visit.id}-${form.id}`} className="text-sm">
+                                      {form.form_name}
+                                    </Label>
+                                  </div>
+                                ))}
+                                {forms.length === 0 && (
+                                  <p className="text-sm text-muted-foreground">
+                                    No forms available. Create forms first.
+                                  </p>
+                                )}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
                       </div>
                       <div className="pl-4 space-y-2">
                         {getFormsForVisit(visit.id).map((form) => (
@@ -744,46 +697,153 @@ export default function ProjectDetail() {
               )}
             </CardContent>
           </Card>
-
-          {/* System Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-              <CardDescription>
-                Data validation and system configuration
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Data Validation</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {project.settings?.data_validation ? 'Enabled' : 'Disabled'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Audit Logging</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {project.settings?.audit_logging ? 'Enabled' : 'Disabled'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">User Access Control</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {project.settings?.user_access_control ? 'Enabled' : 'Disabled'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Auto Backup</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {project.settings?.auto_backup ? 'Enabled' : 'Disabled'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
+
+        {permissions.canAccessSettings && (
+          <TabsContent value="project-settings" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Project Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Information</CardTitle>
+                  <CardDescription>
+                    Basic project details and configuration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Project Name</Label>
+                      <p className="text-sm text-muted-foreground">{project.project_name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Status</Label>
+                      <p className="text-sm text-muted-foreground capitalize">{project.status}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Principal Investigator</Label>
+                      <p className="text-sm text-muted-foreground">{project.principal_investigator}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Institution</Label>
+                      <p className="text-sm text-muted-foreground">{project.institution}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">IRB Number</Label>
+                      <p className="text-sm text-muted-foreground">{project.irb_number || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Number of Visits</Label>
+                      <p className="text-sm text-muted-foreground">{project.number_of_visits || 1}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Visit Types */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Visit Types</CardTitle>
+                  <CardDescription>
+                    Configured visit schedule for this project
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {project.visit_types?.map((visit, index) => (
+                      <div key={visit.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium w-8">{visit.order}.</span>
+                          <span className="text-sm">{visit.name}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {getFormsForVisit(visit.id).length} forms assigned
+                        </span>
+                      </div>
+                    )) || (
+                      <p className="text-sm text-muted-foreground">No visit types configured</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* System Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>System Settings</CardTitle>
+                <CardDescription>
+                  Data validation and system configuration
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Data Validation</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {project.settings?.data_validation ? 'Enabled' : 'Disabled'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Audit Logging</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {project.settings?.audit_logging ? 'Enabled' : 'Disabled'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">User Access Control</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {project.settings?.user_access_control ? 'Enabled' : 'Disabled'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Auto Backup</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {project.settings?.auto_backup ? 'Enabled' : 'Disabled'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Danger Zone - Only for Admins */}
+            {isAdmin && (
+              <Card className="border-red-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-red-600">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span>Danger Zone</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Permanently delete this project and all associated data. This action cannot be undone.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Project
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        )}
       </Tabs>
+
+      {/* Safe Delete Dialog */}
+      <SafeDeleteDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete Project"
+        description={`This will permanently delete the project "${project.project_name}" and all associated data including forms, records, and subjects. This action cannot be undone.`}
+        confirmationText={`Delete ${project.project_name}`}
+        onConfirm={handleDeleteProject}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

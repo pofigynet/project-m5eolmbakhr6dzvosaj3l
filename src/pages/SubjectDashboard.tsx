@@ -15,7 +15,11 @@ import {
   Save,
   Trash2,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock
 } from "lucide-react";
 import { Project, Form, Record } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
@@ -38,23 +42,11 @@ interface VisitType {
   order: number;
 }
 
-const defaultVisitTypes: VisitType[] = [
-  { id: 'baseline', name: 'Baseline', order: 1 },
-  { id: 'month1', name: 'Month 1', order: 2 },
-  { id: 'month2', name: 'Month 2', order: 3 },
-  { id: 'month3', name: 'Month 3', order: 4 },
-  { id: 'month6', name: 'Month 6', order: 5 },
-  { id: 'month12', name: 'Month 12', order: 6 },
-];
-
 export default function SubjectDashboard() {
   const { projectId, subjectId } = useParams<{ projectId: string; subjectId: string }>();
   const navigate = useNavigate();
   const { permissions, isAdmin } = useUserRole();
   
-  const [visitTypes, setVisitTypes] = useState<VisitType[]>(defaultVisitTypes);
-  const [newVisitName, setNewVisitName] = useState("");
-  const [isAddingVisit, setIsAddingVisit] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -75,6 +67,9 @@ export default function SubjectDashboard() {
     queryFn: () => Record.filter({ project_id: projectId, record_id: subjectId }),
     enabled: !!projectId && !!subjectId,
   });
+
+  // Use project visit types instead of local state
+  const visitTypes = project?.visit_types || [];
 
   const getFormStatus = (formId: string, visitId: string) => {
     const record = records.find(r => 
@@ -122,40 +117,34 @@ export default function SubjectDashboard() {
     }
   };
 
-  const addVisitType = () => {
-    if (!newVisitName.trim()) {
-      toast.error("Visit name is required");
-      return;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'complete':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'incomplete':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'unverified':
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'not_started':
+      default:
+        return <div className="h-4 w-4 rounded-full bg-gray-300" />;
     }
-
-    const newVisit: VisitType = {
-      id: `visit_${Date.now()}`,
-      name: newVisitName,
-      order: visitTypes.length + 1,
-    };
-
-    setVisitTypes([...visitTypes, newVisit]);
-    setNewVisitName("");
-    setIsAddingVisit(false);
-    toast.success("Visit type added successfully");
-  };
-
-  const removeVisitType = (visitId: string) => {
-    if (!permissions.canEdit) {
-      toast.error("You don't have permission to edit visit types");
-      return;
-    }
-    
-    setVisitTypes(visitTypes.filter(v => v.id !== visitId));
-    toast.success("Visit type removed");
   };
 
   const handleFormClick = (formId: string, visitId: string) => {
     const form = forms.find(f => f.id === formId);
     const visit = visitTypes.find(v => v.id === visitId);
+    const status = getFormStatus(formId, visitId);
     
     if (form && visit) {
-      toast.info(`Opening ${form.form_name} for ${visit.name}`);
+      if (status === 'not_started') {
+        // Open empty form for data entry
+        navigate(`/projects/${projectId}/data-entry?form=${formId}&subject=${subjectId}&visit=${visitId}`);
+      } else {
+        // Open filled form for review
+        toast.info(`Opening ${form.form_name} for ${visit.name} (${getStatusLabel(status)})`);
+        // TODO: Navigate to form review page
+      }
     }
   };
 
@@ -208,46 +197,6 @@ export default function SubjectDashboard() {
             </Link>
           </Button>
         </div>
-        <div className="flex items-center space-x-2">
-          {permissions.canEdit && (
-            <Dialog open={isAddingVisit} onOpenChange={setIsAddingVisit}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Visit Type
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Visit Type</DialogTitle>
-                  <DialogDescription>
-                    Add a new visit type for data collection timepoints
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="visit-name">Visit Name</Label>
-                    <Input
-                      id="visit-name"
-                      value={newVisitName}
-                      onChange={(e) => setNewVisitName(e.target.value)}
-                      placeholder="e.g., Month 18, Follow-up"
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsAddingVisit(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={addVisitType}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Add Visit
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
       </div>
 
       {/* Subject Info */}
@@ -280,7 +229,7 @@ export default function SubjectDashboard() {
             <CardHeader>
               <CardTitle>Form Completion by Visit</CardTitle>
               <CardDescription>
-                Track form completion across different visit timepoints
+                Track form completion across different visit timepoints. Click on forms to enter data or review existing entries.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -289,15 +238,15 @@ export default function SubjectDashboard() {
                   {/* Legend */}
                   <div className="flex items-center space-x-6 p-4 bg-muted/50 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                       <span className="text-sm">Complete</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                      <XCircle className="h-4 w-4 text-red-600" />
                       <span className="text-sm">Incomplete</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+                      <Clock className="h-4 w-4 text-yellow-600" />
                       <span className="text-sm">Unverified</span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -306,52 +255,60 @@ export default function SubjectDashboard() {
                     </div>
                   </div>
 
-                  {/* Header Row */}
-                  <div className="overflow-x-auto">
-                    <div className="min-w-full">
-                      <div className="grid gap-2 p-4 bg-muted/30 rounded-lg font-medium" style={{gridTemplateColumns: `200px repeat(${visitTypes.length}, 120px)`}}>
-                        <div>Form</div>
-                        {visitTypes.map((visit) => (
-                          <div key={visit.id} className="text-center flex items-center justify-center space-x-1">
-                            <span className="text-xs">{visit.name}</span>
-                            {permissions.canEdit && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 hover:bg-red-100"
-                                onClick={() => removeVisitType(visit.id)}
-                                title="Remove visit type"
-                              >
-                                <Trash2 className="h-3 w-3 text-red-500" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Form Rows */}
-                      <div className="space-y-2 mt-2">
-                        {forms.map((form) => (
-                          <div key={form.id} className="grid gap-2 p-4 border rounded-lg hover:bg-muted/20" style={{gridTemplateColumns: `200px repeat(${visitTypes.length}, 120px)`}}>
-                            <div className="font-medium truncate" title={form.form_name}>
-                              {form.form_name}
-                            </div>
-                            {visitTypes.map((visit) => {
+                  {/* Visit Sections */}
+                  <div className="space-y-6">
+                    {visitTypes.map((visit) => (
+                      <Card key={visit.id}>
+                        <CardHeader>
+                          <CardTitle className="text-lg">{visit.name}</CardTitle>
+                          <CardDescription>
+                            Visit {visit.order} - Forms available for this timepoint
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                            {forms.map((form) => {
                               const status = getFormStatus(form.id, visit.id);
                               return (
-                                <div key={visit.id} className="flex justify-center">
-                                  <button
-                                    className={`w-6 h-6 rounded-full ${getStatusColor(status)} cursor-pointer hover:scale-110 transition-transform`}
-                                    title={`${form.form_name} - ${visit.name}: ${getStatusLabel(status)}`}
-                                    onClick={() => handleFormClick(form.id, visit.id)}
-                                  />
+                                <div
+                                  key={form.id}
+                                  className="p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                                  onClick={() => handleFormClick(form.id, visit.id)}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="font-medium text-sm">{form.form_name}</h4>
+                                    {getStatusIcon(status)}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    {form.description}
+                                  </p>
+                                  <div className="flex items-center justify-between">
+                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                      status === 'complete' ? 'bg-green-100 text-green-800' :
+                                      status === 'incomplete' ? 'bg-red-100 text-red-800' :
+                                      status === 'unverified' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {getStatusLabel(status)}
+                                    </span>
+                                    {status === 'not_started' ? (
+                                      <FileText className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <Eye className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          {forms.length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              No forms available for this visit
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </div>
               ) : (
@@ -368,12 +325,6 @@ export default function SubjectDashboard() {
                         Create Forms
                       </Link>
                     </Button>
-                    {permissions.canEdit && (
-                      <Button variant="outline" onClick={() => setIsAddingVisit(true)}>
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Add Visit Types
-                      </Button>
-                    )}
                   </div>
                 </div>
               )}
@@ -427,7 +378,7 @@ export default function SubjectDashboard() {
             <CardHeader>
               <CardTitle>Visit Schedule</CardTitle>
               <CardDescription>
-                Configured visit types for this project
+                Configured visit types for this project (managed in project settings)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -442,18 +393,12 @@ export default function SubjectDashboard() {
                       <span className="text-xs text-muted-foreground">
                         {records.filter(r => r.data?.visit_type === visit.id).length} records
                       </span>
-                      {permissions.canEdit && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeVisitType(visit.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}
+                {visitTypes.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No visit types configured</p>
+                )}
               </div>
             </CardContent>
           </Card>

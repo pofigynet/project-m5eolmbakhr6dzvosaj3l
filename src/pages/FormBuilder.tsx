@@ -20,7 +20,7 @@ import {
   Circle,
   List
 } from "lucide-react";
-import { Form, Project } from "@/entities";
+import { Form, Project, FormVisitAssignment } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FormField {
   id: string;
@@ -72,6 +73,8 @@ export default function FormBuilder() {
 
   const [fields, setFields] = useState<FormField[]>([]);
   const [selectedField, setSelectedField] = useState<FormField | null>(null);
+  const [selectedVisitTypes, setSelectedVisitTypes] = useState<string[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>(projectId || "");
   const [isLoading, setIsLoading] = useState(false);
 
   const { data: project } = useQuery({
@@ -80,11 +83,25 @@ export default function FormBuilder() {
     enabled: !!projectId,
   });
 
+  const { data: allProjects = [] } = useQuery({
+    queryKey: ['allProjects'],
+    queryFn: () => Project.list(),
+  });
+
   const { data: existingForm } = useQuery({
     queryKey: ['form', formId],
     queryFn: () => Form.get(formId!),
     enabled: !!formId && isEditing,
   });
+
+  const { data: existingAssignments = [] } = useQuery({
+    queryKey: ['formAssignments', formId],
+    queryFn: () => FormVisitAssignment.filter({ form_id: formId }),
+    enabled: !!formId && isEditing,
+  });
+
+  // Get the currently selected project data
+  const currentProject = allProjects.find(p => p.id === selectedProject) || project;
 
   useEffect(() => {
     if (existingForm && isEditing) {
@@ -95,6 +112,8 @@ export default function FormBuilder() {
         order_index: existingForm.order_index,
       });
       
+      setSelectedProject(existingForm.project_id);
+      
       if (existingForm.schema?.fields) {
         setFields(existingForm.schema.fields.map((field: any, index: number) => ({
           ...field,
@@ -103,6 +122,12 @@ export default function FormBuilder() {
       }
     }
   }, [existingForm, isEditing]);
+
+  useEffect(() => {
+    if (existingAssignments.length > 0) {
+      setSelectedVisitTypes(existingAssignments.map(a => a.visit_type_id));
+    }
+  }, [existingAssignments]);
 
   const addField = (type: string) => {
     const newField: FormField = {
@@ -148,9 +173,22 @@ export default function FormBuilder() {
     setFields(newFields);
   };
 
+  const handleVisitTypeChange = (visitTypeId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedVisitTypes([...selectedVisitTypes, visitTypeId]);
+    } else {
+      setSelectedVisitTypes(selectedVisitTypes.filter(id => id !== visitTypeId));
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.form_name.trim()) {
       toast.error("Form name is required");
+      return;
+    }
+
+    if (!selectedProject) {
+      toast.error("Please select a project");
       return;
     }
 
@@ -170,19 +208,42 @@ export default function FormBuilder() {
 
       const formPayload = {
         ...formData,
-        project_id: projectId,
+        project_id: selectedProject,
         schema,
       };
 
+      let savedForm;
       if (isEditing) {
-        await Form.update(formId!, formPayload);
-        toast.success("Form updated successfully!");
+        savedForm = await Form.update(formId!, formPayload);
+        
+        // Delete existing assignments
+        for (const assignment of existingAssignments) {
+          await FormVisitAssignment.delete(assignment.id);
+        }
       } else {
-        await Form.create(formPayload);
-        toast.success("Form created successfully!");
+        savedForm = await Form.create(formPayload);
       }
 
-      navigate(`/projects/${projectId}`);
+      // Create new visit assignments
+      const targetProject = allProjects.find(p => p.id === selectedProject);
+      if (targetProject && selectedVisitTypes.length > 0) {
+        for (const visitTypeId of selectedVisitTypes) {
+          const visit = targetProject.visit_types?.find(v => v.id === visitTypeId);
+          if (visit) {
+            await FormVisitAssignment.create({
+              project_id: selectedProject,
+              form_id: savedForm.id || formId!,
+              visit_type_id: visitTypeId,
+              visit_name: visit.name,
+              form_name: formData.form_name,
+              is_required: true
+            });
+          }
+        }
+      }
+
+      toast.success(isEditing ? "Form updated successfully!" : "Form created successfully!");
+      navigate(`/projects/${selectedProject}`);
     } catch (error) {
       toast.error("Failed to save form. Please try again.");
       console.error("Error saving form:", error);
@@ -198,7 +259,7 @@ export default function FormBuilder() {
         <div className="flex items-center space-x-2">
           <SidebarTrigger />
           <Button variant="ghost" size="sm" asChild>
-            <Link to={`/projects/${projectId}`}>
+            <Link to={`/projects/${projectId || selectedProject}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Project
             </Link>
@@ -223,7 +284,7 @@ export default function FormBuilder() {
             {isEditing ? "Edit Form" : "Create New Form"}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Project: {project?.project_name}
+            Project: {currentProject?.project_name || "Select a project"}
           </p>
         </div>
 
@@ -256,6 +317,7 @@ export default function FormBuilder() {
                 />
               </div>
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -266,6 +328,48 @@ export default function FormBuilder() {
                 rows={3}
               />
             </div>
+
+            {/* Project Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="project">Project *</Label>
+              <Select value={selectedProject} onValueChange={setSelectedProject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allProjects.map((proj) => (
+                    <SelectItem key={proj.id} value={proj.id}>
+                      {proj.project_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Visit Type Assignment */}
+            {currentProject?.visit_types && currentProject.visit_types.length > 0 && (
+              <div className="space-y-2">
+                <Label>Assign to Visit Types</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg">
+                  {currentProject.visit_types.map((visit) => (
+                    <div key={visit.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`visit_${visit.id}`}
+                        checked={selectedVisitTypes.includes(visit.id)}
+                        onCheckedChange={(checked) => handleVisitTypeChange(visit.id, checked as boolean)}
+                      />
+                      <Label htmlFor={`visit_${visit.id}`} className="text-sm">
+                        {visit.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select which visit types this form should be available for
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center space-x-2">
               <Switch
                 id="is_active"
@@ -285,7 +389,7 @@ export default function FormBuilder() {
           <CardHeader>
             <CardTitle>Field Types</CardTitle>
             <CardDescription>
-              Click to add fields to your form
+              Drag or click to add fields to your form
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -335,7 +439,6 @@ export default function FormBuilder() {
                         moveField(field.id, 'up');
                       }}
                       disabled={index === 0}
-                      className="h-6 w-6 p-0"
                     >
                       ↑
                     </Button>
@@ -347,7 +450,6 @@ export default function FormBuilder() {
                         moveField(field.id, 'down');
                       }}
                       disabled={index === fields.length - 1}
-                      className="h-6 w-6 p-0"
                     >
                       ↓
                     </Button>
@@ -358,9 +460,8 @@ export default function FormBuilder() {
                         e.stopPropagation();
                         removeField(field.id);
                       }}
-                      className="h-6 w-6 p-0"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -472,6 +573,85 @@ export default function FormBuilder() {
                   />
                   <Label>Required field</Label>
                 </div>
+
+                {selectedField.type === 'number' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>Min Value</Label>
+                        <Input
+                          type="number"
+                          value={selectedField.validation?.min || ''}
+                          onChange={(e) => updateField(selectedField.id, {
+                            validation: { 
+                              ...selectedField.validation, 
+                              min: e.target.value ? parseInt(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Max Value</Label>
+                        <Input
+                          type="number"
+                          value={selectedField.validation?.max || ''}
+                          onChange={(e) => updateField(selectedField.id, {
+                            validation: { 
+                              ...selectedField.validation, 
+                              max: e.target.value ? parseInt(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {selectedField.type === 'text' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Validation Pattern (Regex)</Label>
+                      <Input
+                        value={selectedField.validation?.pattern || ''}
+                        onChange={(e) => updateField(selectedField.id, {
+                          validation: { 
+                            ...selectedField.validation, 
+                            pattern: e.target.value 
+                          }
+                        })}
+                        placeholder="^[A-Z]{2}[0-9]{4}$"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>Min Length</Label>
+                        <Input
+                          type="number"
+                          value={selectedField.validation?.minLength || ''}
+                          onChange={(e) => updateField(selectedField.id, {
+                            validation: { 
+                              ...selectedField.validation, 
+                              minLength: e.target.value ? parseInt(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Max Length</Label>
+                        <Input
+                          type="number"
+                          value={selectedField.validation?.maxLength || ''}
+                          onChange={(e) => updateField(selectedField.id, {
+                            validation: { 
+                              ...selectedField.validation, 
+                              maxLength: e.target.value ? parseInt(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">

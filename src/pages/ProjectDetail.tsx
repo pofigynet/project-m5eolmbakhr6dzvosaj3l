@@ -187,27 +187,6 @@ export default function ProjectDetail() {
     invalidRecords: records.filter(r => r.validation_status === 'invalid').length,
   };
 
-  const handleDeleteSubject = async (pid: string) => {
-    if (!isAdmin) {
-      toast.error("Only administrators can delete subjects");
-      return;
-    }
-
-    try {
-      // Delete all records for this subject
-      const subjectRecords = records.filter(record => record.record_id === pid);
-      for (const record of subjectRecords) {
-        await Record.delete(record.id);
-      }
-      
-      toast.success(`Subject ${pid} deleted successfully`);
-      refetchRecords();
-    } catch (error) {
-      toast.error("Failed to delete subject");
-      console.error("Error deleting subject:", error);
-    }
-  };
-
   const handleDeleteProject = async () => {
     if (!isAdmin) {
       toast.error("Only administrators can delete projects");
@@ -459,9 +438,8 @@ export default function ProjectDetail() {
                   </div>
 
                   {/* Header Row */}
-                  <div className="grid gap-2 p-4 bg-muted/30 rounded-lg font-medium" style={{gridTemplateColumns: `120px 60px repeat(${Math.min(forms.length, 8)}, 1fr)`}}>
+                  <div className="grid gap-2 p-4 bg-muted/30 rounded-lg font-medium" style={{gridTemplateColumns: `120px repeat(${Math.min(forms.length, 8)}, 1fr)`}}>
                     <div>PID</div>
-                    <div>Actions</div>
                     {forms.slice(0, 8).map((form) => (
                       <div key={form.id} className="text-center text-xs truncate" title={form.form_name}>
                         {form.form_name.substring(0, 10)}...
@@ -469,10 +447,10 @@ export default function ProjectDetail() {
                     ))}
                   </div>
 
-                  {/* Subject Rows */}
+                  {/* Subject Rows - REMOVED DELETE BUTTONS */}
                   <div className="space-y-2">
                     {subjectsData.map((subject) => (
-                      <div key={subject.pid} className="grid gap-2 p-4 border rounded-lg hover:bg-muted/20 transition-colors" style={{gridTemplateColumns: `120px 60px repeat(${Math.min(forms.length, 8)}, 1fr)`}}>
+                      <div key={subject.pid} className="grid gap-2 p-4 border rounded-lg hover:bg-muted/20 transition-colors" style={{gridTemplateColumns: `120px repeat(${Math.min(forms.length, 8)}, 1fr)`}}>
                         <div className="flex items-center">
                           <Link 
                             to={`/projects/${id}/subjects/${subject.pid}`}
@@ -480,34 +458,6 @@ export default function ProjectDetail() {
                           >
                             {subject.pid}
                           </Link>
-                        </div>
-                        <div className="flex items-center">
-                          {isAdmin && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                  <Trash2 className="h-3 w-3 text-red-500" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Subject {subject.pid}</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will permanently delete all data for subject {subject.pid}. This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleDeleteSubject(subject.pid)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
                         </div>
                         {subject.forms.slice(0, 8).map((form) => (
                           <div key={form.formId} className="flex justify-center">

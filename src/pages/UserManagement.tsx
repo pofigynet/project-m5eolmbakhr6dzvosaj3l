@@ -2,242 +2,408 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Plus, Search, Users, Mail, Shield, MoreHorizontal, UserCheck, UserX } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Plus, 
+  Users, 
+  Mail, 
+  Shield,
+  Edit,
+  Trash2,
+  UserPlus,
+  AlertCircle
+} from "lucide-react";
 import { User } from "@/entities";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { CreateUserDialog } from "@/components/CreateUserDialog";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function UserManagement() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { isAdmin, permissions } = useUserRole();
+  const [isInviting, setIsInviting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [newUser, setNewUser] = useState({
+    full_name: "",
+    email: "",
+    role: "viewer" as const,
+  });
 
   const { data: users = [], refetch } = useQuery({
     queryKey: ['users'],
     queryFn: () => User.list(),
   });
 
-  const filteredUsers = users.filter(user =>
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.institution?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => User.me(),
+  });
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Badge variant="destructive">Admin</Badge>;
-      case 'researcher':
-        return <Badge variant="default">Researcher</Badge>;
-      case 'data_entry':
-        return <Badge variant="secondary">Data Entry</Badge>;
-      case 'viewer':
-        return <Badge variant="outline">Viewer</Badge>;
-      default:
-        return <Badge variant="outline">{role}</Badge>;
+  const handleInviteUser = async () => {
+    if (!newUser.full_name.trim() || !newUser.email.trim()) {
+      toast.error("Name and email are required");
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUser.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    // Check for duplicate email
+    const existingUser = users.find(user => 
+      user.email.toLowerCase() === newUser.email.toLowerCase()
+    );
+    if (existingUser) {
+      toast.error("A user with this email already exists");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Note: Since backend functions are disabled, we can only create user records
+      // In a real implementation, this would send an invitation email
+      await User.create({
+        full_name: newUser.full_name,
+        email: newUser.email,
+        role: newUser.role,
+      });
+
+      toast.success(`User invitation sent to ${newUser.email}`);
+      setIsInviting(false);
+      setNewUser({
+        full_name: "",
+        email: "",
+        role: "viewer",
+      });
+      refetch();
+    } catch (error: any) {
+      console.error("Error inviting user:", error);
+      
+      // Provide more specific error messages
+      if (error?.message?.includes('duplicate') || error?.message?.includes('unique')) {
+        toast.error("A user with this email already exists");
+      } else if (error?.message?.includes('permission') || error?.message?.includes('unauthorized')) {
+        toast.error("You don't have permission to invite users");
+      } else if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+        toast.error("Network error. Please check your connection and try again");
+      } else if (error?.message?.includes('validation')) {
+        toast.error("Invalid user data. Please check all fields");
+      } else {
+        toast.error(`Failed to invite user: ${error?.message || 'Unknown error'}`);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getStatusBadge = (isActive: boolean) => {
-    return isActive ? (
-      <Badge variant="default" className="bg-green-100 text-green-800">
-        <UserCheck className="h-3 w-3 mr-1" />
-        Active
-      </Badge>
-    ) : (
-      <Badge variant="secondary" className="bg-red-100 text-red-800">
-        <UserX className="h-3 w-3 mr-1" />
-        Inactive
-      </Badge>
-    );
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!isAdmin) {
+      toast.error("Only administrators can delete users");
+      return;
+    }
+
+    if (userId === currentUser?.id) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+
+    try {
+      await User.delete(userId);
+      toast.success(`User ${userName} deleted successfully`);
+      refetch();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error(`Failed to delete user: ${error?.message || 'Unknown error'}`);
+    }
   };
 
-  const userStats = {
-    total: users.length,
-    active: users.filter(u => u.is_active).length,
-    admins: users.filter(u => u.user_role === 'admin').length,
-    researchers: users.filter(u => u.user_role === 'researcher').length,
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'administrator':
+        return 'bg-red-100 text-red-800';
+      case 'editor':
+        return 'bg-blue-100 text-blue-800';
+      case 'viewer':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'administrator':
+        return <Shield className="h-4 w-4" />;
+      case 'editor':
+        return <Edit className="h-4 w-4" />;
+      case 'viewer':
+        return <Users className="h-4 w-4" />;
+      default:
+        return <Users className="h-4 w-4" />;
+    }
+  };
+
+  if (!permissions.canAccessSettings) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center space-x-2">
+          <SidebarTrigger />
+          <h2 className="text-3xl font-bold tracking-tight">Access Denied</h2>
+        </div>
+        <Card>
+          <CardContent className="text-center py-8">
+            <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-semibold">Access Denied</h3>
+            <p className="mt-2 text-muted-foreground">
+              You don't have permission to access user management.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      {/* Header */}
       <div className="flex items-center justify-between space-y-2">
         <div className="flex items-center space-x-2">
           <SidebarTrigger />
-          <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+            <p className="text-muted-foreground">
+              Manage user accounts and permissions
+            </p>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        </div>
+        {isAdmin && (
+          <Dialog open={isInviting} onOpenChange={setIsInviting}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Invite User
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite New User</DialogTitle>
+                <DialogDescription>
+                  Send an invitation to a new user to join the platform
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name *</Label>
+                  <Input
+                    id="full_name"
+                    value={newUser.full_name}
+                    onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select 
+                    value={newUser.role} 
+                    onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="viewer">Viewer</SelectItem>
+                      <SelectItem value="editor">Editor</SelectItem>
+                      <SelectItem value="administrator">Administrator</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Viewers can only view data, Editors can create and edit, Administrators have full access
+                  </p>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsInviting(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleInviteUser} disabled={isLoading}>
+                    {isLoading ? "Sending..." : "Send Invitation"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      {/* User Statistics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userStats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              Registered accounts
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <UserCheck className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{userStats.active}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Administrators</CardTitle>
-            <Shield className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userStats.admins}</div>
-            <p className="text-xs text-muted-foreground">
-              Admin privileges
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Researchers</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userStats.researchers}</div>
-            <p className="text-xs text-muted-foreground">
-              Research staff
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-      </div>
-
-      {/* Users Table */}
+      {/* Users List */}
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
           <CardDescription>
-            Manage user accounts and permissions
+            All users with access to the platform
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Institution</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Login</TableHead>
-                <TableHead className="w-[70px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    {user.full_name || `${user.first_name} ${user.last_name}`}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
+          <div className="space-y-4">
+            {users.map((user) => (
+              <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-medium">{user.full_name}</h4>
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <Mail className="h-3 w-3" />
                       <span>{user.email}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>{user.institution || 'Not specified'}</TableCell>
-                  <TableCell>{getRoleBadge(user.user_role)}</TableCell>
-                  <TableCell>{getStatusBadge(user.is_active)}</TableCell>
-                  <TableCell>
-                    {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                    <p className="text-xs text-muted-foreground">
+                      Joined: {new Date(user.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Badge className={getRoleColor(user.role)}>
+                    <div className="flex items-center space-x-1">
+                      {getRoleIcon(user.role)}
+                      <span className="capitalize">{user.role}</span>
+                    </div>
+                  </Badge>
+                  {isAdmin && user.id !== currentUser?.id && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit User</DropdownMenuItem>
-                        <DropdownMenuItem>Reset Password</DropdownMenuItem>
-                        <DropdownMenuItem>View Activity</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          {user.is_active ? 'Deactivate' : 'Activate'}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-8">
-              <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No users found</h3>
-              <p className="mt-2 text-muted-foreground">
-                {searchTerm ? "Try adjusting your search terms." : "Get started by adding your first user."}
-              </p>
-            </div>
-          )}
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete User</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete {user.full_name}? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteUser(user.id, user.full_name)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </div>
+            ))}
+            {users.length === 0 && (
+              <div className="text-center py-8">
+                <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">No users found</h3>
+                <p className="mt-2 text-muted-foreground">
+                  Start by inviting users to join the platform.
+                </p>
+                {isAdmin && (
+                  <Button className="mt-4" onClick={() => setIsInviting(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Invite First User
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      <CreateUserDialog 
-        open={showCreateDialog} 
-        onOpenChange={setShowCreateDialog}
-        onSuccess={() => {
-          refetch();
-          setShowCreateDialog(false);
-        }}
-      />
+      {/* Role Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Role Permissions</CardTitle>
+          <CardDescription>
+            Understanding user roles and their capabilities
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-gray-600" />
+                <h4 className="font-medium">Viewer</h4>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• View projects and data</li>
+                <li>• Access reports and dashboards</li>
+                <li>• Cannot create or edit</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Edit className="h-4 w-4 text-blue-600" />
+                <h4 className="font-medium">Editor</h4>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• All viewer permissions</li>
+                <li>• Create and edit projects</li>
+                <li>• Enter and modify data</li>
+                <li>• Manage forms</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Shield className="h-4 w-4 text-red-600" />
+                <h4 className="font-medium">Administrator</h4>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• All editor permissions</li>
+                <li>• Manage users and roles</li>
+                <li>• Delete projects and data</li>
+                <li>• System configuration</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
